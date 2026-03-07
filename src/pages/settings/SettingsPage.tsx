@@ -19,7 +19,6 @@ import { BankTab } from "./components/BankTab";
 import { BrandingTab } from "./components/BrandingTab";
 import { TeamTab } from "./components/TeamTab";
 
-// Schema definition remains here for central type safety
 const companySchema = z.object({
   id: z.string().optional().nullable(),
   companyName: z.string().min(1, "Company Name is required"),
@@ -108,11 +107,13 @@ export default function SettingsPage() {
     setIsConfirmOpen(true);
   };
 
-  const onDeleteClick = (e: React.MouseEvent, id: string, username: string) => {
-    e.preventDefault(); 
-    e.stopPropagation();
+  // 👇 UPDATED: Removed window.confirm. 
+  // It now immediately triggers the final Password Dialog since the TeamTab already confirmed intent.
+  const onDeleteClick = (e: React.MouseEvent | any, id: string, username: string) => {
+    if (e?.preventDefault) e.preventDefault(); 
+    if (e?.stopPropagation) e.stopPropagation();
     
-    if (!confirm(`Are you sure you want to remove access for ${username}?`)) return;
+    // Set the action and open the final password confirmation
     setPendingAction({ type: 'DELETE_USER', payload: { id, username } });
     setIsConfirmOpen(true);
   };
@@ -142,7 +143,6 @@ export default function SettingsPage() {
 
   const isAdmin = currentUser?.role === 'ADMIN';
 
-  // NEW: Settings Menu Config
   const menuItems = [
     {
       id: "general",
@@ -170,7 +170,6 @@ export default function SettingsPage() {
     }] : [])
   ];
 
-  // VIEW 1: OVERVIEW DASHBOARD
   if (!activeTab) {
     return (
       <div className="space-y-8 max-w-5xl mx-auto pb-10">
@@ -205,11 +204,9 @@ export default function SettingsPage() {
     );
   }
 
-  // VIEW 2: DETAILS
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-10">
       
-      {/* Header with Back Button */}
       <div className="flex items-center gap-2 mb-2">
         <Button variant="ghost" size="sm" onClick={() => setActiveTab(null)} className="gap-1 pl-0 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" /> Back to Settings
@@ -222,7 +219,6 @@ export default function SettingsPage() {
           </h1>
       </div>
 
-      {/* Render Component based on Active Tab */}
       {activeTab === 'general' && (
         <GeneralTab form={form} onSubmit={onFormSubmit} isAdmin={isAdmin} isLoading={isLoading} />
       )}
@@ -239,6 +235,7 @@ export default function SettingsPage() {
         <TeamTab users={users} onDeleteClick={onDeleteClick} onUserAdded={loadUsers} />
       )}
 
+      {/* FINAL STEP: The global password confirmation dialog */}
       <PasswordConfirmDialog 
         open={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}
