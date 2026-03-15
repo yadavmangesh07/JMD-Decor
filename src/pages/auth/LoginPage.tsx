@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
-import { Lock, User, Building2 } from "lucide-react"; // Added Building2
+import { Lock, User, Building2, Eye, EyeOff } from "lucide-react"; // 👈 Added Eye icons
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -30,8 +30,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  
-  // State to track if logo failed to load
+  const [showPassword, setShowPassword] = useState(false); // 👈 State for visibility
   const [logoError, setLogoError] = useState(false);
 
   const form = useForm<LoginFormValues>({
@@ -59,22 +58,17 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
       <Card className="w-full max-w-md shadow-lg">
-        
-        {/* 👇 UPDATED HEADER SECTION */}
         <CardHeader className="text-center flex flex-col items-center space-y-2">
-          
           {!logoError ? (
-            // 1. Try showing the Logo
             <div className="h-16 w-full flex items-center justify-center mb-2">
               <img 
                 src="/logo.png" 
                 alt="Company Logo" 
                 className="h-full w-auto object-contain"
-                onError={() => setLogoError(true)} // Switch to text if image fails
+                onError={() => setLogoError(true)} 
               />
             </div>
           ) : (
-            // 2. Fallback to Text if image missing
             <div className="flex flex-col items-center">
                <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
                   <Building2 className="h-6 w-6 text-primary" />
@@ -82,8 +76,7 @@ export default function LoginPage() {
                <CardTitle className="text-2xl font-bold">JMD Decor</CardTitle>
             </div>
           )}
-
-          <CardDescription>Please enter you credentials</CardDescription>
+          <CardDescription>Please enter your credentials</CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -116,7 +109,24 @@ export default function LoginPage() {
                     <FormControl>
                       <div className="relative">
                         <Lock className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                        <Input type="password" className="pl-9" placeholder="Enter password" {...field} />
+                        <Input 
+                          type={showPassword ? "text" : "password"} // 👈 Toggle type
+                          className="pl-9 pr-10" // 👈 Added padding for the eye button
+                          placeholder="Enter password" 
+                          {...field} 
+                        />
+                        {/* 👇 Eye Toggle Button */}
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700 focus:outline-none"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
                       </div>
                     </FormControl>
                     <FormMessage />
