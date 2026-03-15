@@ -12,7 +12,8 @@ import {
   IndianRupee,
   Users,
   FileText,
-  Activity
+  Activity,
+  Clock // Added Clock icon
 } from "lucide-react";
 import { format } from "date-fns";
 import apiClient from "@/lib/axios";
@@ -42,6 +43,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null); // State for timestamp
 
   useEffect(() => {
     const loadData = async () => {
@@ -52,6 +54,7 @@ export default function DashboardPage() {
         ]);
 
         setStats(statsRes.data);
+        setLastUpdated(new Date()); // Update timestamp on success
 
         if (Array.isArray(clientsData)) setClients(clientsData);
         else if ((clientsData as any)?.content) setClients((clientsData as any).content);
@@ -94,13 +97,24 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 p-6 pb-10">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your business performance.</p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">Overview of your business performance.</p>
+        </div>
+        
+        {/* New Last Updated Section */}
+        {lastUpdated && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border text-muted-foreground">
+            <Clock className="h-3.5 w-3.5" />
+            <span className="text-xs font-medium">
+              Last updated: {format(lastUpdated, "hh:mm a")}
+            </span>
+          </div>
+        )}
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Stat Cards remain unchanged */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -154,16 +168,12 @@ export default function DashboardPage() {
             <CardDescription>Monthly revenue trends.</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center pl-2">
-            {/* ChartContainer is still used for theme variables, but ResponsiveContainer is removed */}
             <ChartContainer config={chartConfig} className="h-[350px] w-full">
               {(!stats.monthlyStats || stats.monthlyStats.length === 0) ? (
                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                     No historical data available yet.
                 </div>
               ) : (
-                /* Fixed dimensions applied directly here. 
-                   Removed <ResponsiveContainer> to silence console warnings.
-                */
                 <AreaChart
                   width={568}
                   height={350}

@@ -1,6 +1,19 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // 👈 Hook for navigation
-import { Plus, Filter, X, MoreHorizontal, Eye, FileDown, Truck, Mail, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { 
+  Plus, 
+  Filter, 
+  X, 
+  MoreHorizontal, 
+  Eye, 
+  FileDown, 
+  Truck, 
+  Mail, 
+  Pencil, 
+  Trash2, 
+  AlertTriangle,
+  FileText // 👈 Added for the invoice icon
+} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -41,12 +54,12 @@ import { invoiceService } from "@/services/invoiceService";
 import { clientService } from "@/services/clientService"; 
 import type { Invoice, PageResponse, Client } from "@/types";
 
-// Import Forms (Removed InvoiceForm)
+// Import Forms
 import { EwayBillDialog } from "@/features/invoices/EwayBillDialog";
 import { InvoiceEmailDialog } from "@/features/invoices/InvoiceEmailDialog";
 
 export default function InvoicePage() {
-  const navigate = useNavigate(); // 👈 Init Hook
+  const navigate = useNavigate();
   const [data, setData] = useState<PageResponse<Invoice> | null>(null);
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<Client[]>([]); 
@@ -54,8 +67,6 @@ export default function InvoicePage() {
   const [filterClient, setFilterClient] = useState<string>("ALL");
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [sortOrder, setSortOrder] = useState<string>("desc"); 
-
-  // Removed isFormOpen & editingInvoice states
 
   const [ewayDialog, setEwayDialog] = useState<{open: boolean, invId: string, currentNo: string}>({
       open: false, invId: "", currentNo: ""
@@ -113,7 +124,6 @@ export default function InvoicePage() {
     }
   };
 
-  // 👇 Updated Handlers to Navigate
   const handleCreate = () => { navigate("/invoices/new"); };
   const handleEdit = (inv: Invoice) => { navigate(`/invoices/${inv.id}/edit`); };
 
@@ -202,10 +212,10 @@ export default function InvoicePage() {
        
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-            <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Invoices</h1>
             <p className="text-muted-foreground">Manage and track your client invoices.</p>
         </div>
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} className="font-bold tracking-tight">
           <Plus className="mr-2 h-4 w-4" /> Create Invoice
         </Button>
       </div>
@@ -251,22 +261,22 @@ export default function InvoicePage() {
         )}
       </div>
 
-      <div className="border rounded-md bg-white shadow-sm">
+      <div className="border rounded-md bg-white shadow-sm overflow-hidden">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-slate-50/50">
             <TableRow>
-              <TableHead>Invoice #</TableHead>
-              <TableHead>Client</TableHead> 
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Invoice #</TableHead>
+              <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Client</TableHead> 
+              <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Date</TableHead>
+              <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Status</TableHead>
+              <TableHead className="text-right font-bold text-[11px] uppercase tracking-wider text-slate-400">Total</TableHead>
+              <TableHead className="text-right font-bold text-[11px] uppercase tracking-wider text-slate-400"></TableHead>
             </TableRow>
           </TableHeader>
            
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center h-24 text-muted-foreground">Loading invoices...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center h-24 text-muted-foreground font-medium">Syncing invoices...</TableCell></TableRow>
             ) : !data?.content || data.content.length === 0 ? (
               <TableRow><TableCell colSpan={6} className="text-center h-24 text-muted-foreground">No invoices found.</TableCell></TableRow>
             ) : (
@@ -276,18 +286,26 @@ export default function InvoicePage() {
                 return (
                 <TableRow 
                     key={inv.id}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="group cursor-pointer hover:bg-slate-50/80 transition-colors"
                     onClick={() => handleViewPdf(inv)}
                 >
-                  <TableCell className="font-medium">{inv.invoiceNo}</TableCell>
-                  <TableCell>{clientName}</TableCell>
-                  <TableCell>{inv.issuedAt ? format(new Date(inv.issuedAt), 'MMM dd, yyyy') : '-'}</TableCell>
+                  <TableCell className="font-bold text-slate-900">
+                    <div className="flex items-center gap-2">
+                       {/* 👇 Icon added here */}
+                       <div className="p-1.5 bg-primary/10 rounded border border-primary/10 group-hover:scale-110 transition-transform">
+                          <FileText className="h-3.5 w-3.5 text-primary" />
+                       </div>
+                       {inv.invoiceNo}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-700">{clientName}</TableCell>
+                  <TableCell className="text-slate-500 font-medium">{inv.issuedAt ? format(new Date(inv.issuedAt), 'MMM dd, yyyy') : '-'}</TableCell>
                    
                   <TableCell>
                     <Badge 
                         variant="outline" 
                         className={cn(
-                            "text-[10px] h-5 px-2 capitalize border", 
+                            "text-[10px] h-5 px-2 capitalize border font-bold tracking-tight", 
                             getStatusStyle(inv.status)
                         )}
                     >
@@ -295,7 +313,7 @@ export default function InvoicePage() {
                     </Badge>
                   </TableCell>
 
-                  <TableCell className="text-right font-bold">₹{inv.total.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-black text-slate-900">₹{inv.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</TableCell>
                    
                   <TableCell 
                     className="text-right" 
@@ -303,13 +321,13 @@ export default function InvoicePage() {
                   >
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100">
                           <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreHorizontal className="h-4 w-4 text-slate-400" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-400">Actions</DropdownMenuLabel>
                          
                         <DropdownMenuItem onClick={() => handleViewPdf(inv)}>
                           <Eye className="mr-2 h-4 w-4" /> View Invoice
@@ -321,11 +339,11 @@ export default function InvoicePage() {
                         <DropdownMenuSeparator />
                          
                         <DropdownMenuItem onClick={() => handleDownloadEway(inv)}>
-                          <Truck className="mr-2 h-4 w-4" /> Generate E-Way JSON
+                          <Truck className="mr-2 h-4 w-4" /> E-Way JSON
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEwayDialog(inv)}>
                           <Truck className="mr-2 h-4 w-4" /> 
-                          {inv.ewayBillNo ? "Update E-Way No" : "Add E-Way No"}
+                          {inv.ewayBillNo ? "Update E-Way" : "Add E-Way"}
                         </DropdownMenuItem>
 
                         <DropdownMenuSeparator />
@@ -351,6 +369,7 @@ export default function InvoicePage() {
         </Table>
       </div>
 
+      {/* --- ALL DIALOGS REMAIN UNCHANGED --- */}
       <EwayBillDialog 
         open={ewayDialog.open} 
         onOpenChange={(val) => setEwayDialog(prev => ({ ...prev, open: val }))}
@@ -360,11 +379,13 @@ export default function InvoicePage() {
       />
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[90vw] w-full h-[90vh] flex flex-col p-0">
+        <DialogContent className="max-w-[90vw] w-full h-[90vh] flex flex-col p-0 border-none">
           <DialogHeader className="p-4 pb-2 border-b bg-white rounded-t-lg">
-            <DialogTitle>Invoice Preview</DialogTitle>
+            <DialogTitle className="text-lg font-black tracking-tight flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" /> Invoice Terminal
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 w-full bg-gray-100 p-0 overflow-hidden">
+          <div className="flex-1 w-full bg-slate-100 p-0 overflow-hidden">
             {previewUrl && (
               <iframe 
                 src={previewUrl} 
@@ -387,18 +408,19 @@ export default function InvoicePage() {
       )}
 
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-red-600">
-                    <AlertTriangle className="h-5 w-5" /> Confirm Deletion
-                </DialogTitle>
+        <DialogContent className="max-w-sm">
+            <DialogHeader className="items-center text-center">
+                <div className="p-3 bg-red-50 rounded-full mb-2">
+                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+                <DialogTitle className="text-xl font-bold">Terminate Invoice?</DialogTitle>
                 <DialogDescription>
-                    Are you sure you want to delete this invoice? This action cannot be undone.
+                    This action will permanently remove the invoice record. This cannot be undone.
                 </DialogDescription>
             </DialogHeader>
-            <DialogFooter className="gap-2 sm:gap-0">
-                <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
-                <Button variant="destructive" onClick={confirmDelete}>Delete Invoice</Button>
+            <DialogFooter className="gap-2 sm:gap-0 mt-2">
+                <Button variant="outline" className="flex-1" onClick={() => setDeleteId(null)}>Cancel</Button>
+                <Button variant="destructive" className="flex-1 font-bold" onClick={confirmDelete}>Delete</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>

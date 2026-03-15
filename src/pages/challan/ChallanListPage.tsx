@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Search, Pencil, Trash2, MoreHorizontal, Download, AlertTriangle } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, MoreHorizontal, Download, AlertTriangle, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -141,7 +141,6 @@ export default function ChallanListPage() {
                 <TableHead>Date</TableHead>
                 <TableHead>Client</TableHead>
                 <TableHead>Order No</TableHead>
-                {/* 👇 Added 'Actions' Header */}
                 <TableHead className="text-right w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -159,7 +158,13 @@ export default function ChallanListPage() {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handlePreview(challan.id!)}
                 >
-                  <TableCell className="font-medium">{challan.challanNo}</TableCell>
+                  {/* 👇 Icon and No-Wrap styling added here */}
+                  <TableCell className="font-medium whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
+                      {challan.challanNo}
+                    </div>
+                  </TableCell>
                   <TableCell>{challan.challanDate ? format(new Date(challan.challanDate), "dd MMM yyyy") : "-"}</TableCell>
                   <TableCell>{challan.clientName}</TableCell>
                   <TableCell>{challan.orderNo}</TableCell>
