@@ -160,7 +160,7 @@ export default function ChallanListPage() {
                 >
                   {/* 👇 Icon and No-Wrap styling added here */}
                   <TableCell className="font-medium whitespace-nowrap">
-                    <div className="flex items-center gap-2">
+                    <div className="flex font-bold  items-center gap-2">
                       <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
                       {challan.challanNo}
                     </div>

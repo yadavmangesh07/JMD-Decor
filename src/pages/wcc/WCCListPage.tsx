@@ -212,7 +212,7 @@ export default function WCCListPage() {
                     onClick={() => handlePreview(doc)}
                 >
                   <TableCell className="font-medium align-middle"> {/* Added align-middle */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex font-bold items-center gap-2">
                          <FileCheck className="h-4 w-4 text-blue-600" />
                          {doc.refNo}
                     </div>

@@ -27,10 +27,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+// 1. Properly typed Motion Imports
 import { motion, AnimatePresence, type Variants } from "framer-motion";
+
+// Import the Floating Overlay Component
 import { FloatingUserNav } from "@/components/common/FloatingUserNav";
 
-// --- ANIMATION VARIANTS ---
+// --- ANIMATION VARIANTS (Typed to satisfy TS) ---
 const iconVariants: Variants = {
   idle: { scale: 1, rotate: 0 },
   hover: { 
@@ -146,45 +149,27 @@ export function MainLayout() {
                 {group.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname === item.href || (item.href !== "/dashboard" && location.pathname.startsWith(item.href + "/"));
-                  
                   return (
-                    <Link key={item.href} to={item.href} className="relative block no-underline">
+                    <Link key={item.href} to={item.href}>
                       <motion.div
                         whileHover="hover"
                         whileTap="tap"
                         initial="idle"
                         className={cn(
-                          "group flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition-colors duration-300 cursor-pointer relative",
-                          isActive ? "text-primary" : "text-gray-600 hover:text-gray-900"
+                          "group flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer",
+                          isActive ? "bg-primary/10 text-primary shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         )}
                       >
-                        {/* --- SUPER SMOOTH BACKGROUND PILL --- */}
-                        {isActive && (
-                          <motion.div
-                            layoutId="activePill"
-                            className="absolute inset-0 bg-primary/10 rounded-md z-0"
-                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                          />
-                        )}
-
-                        <div className="flex items-center gap-3 relative z-10">
+                        <div className="flex items-center gap-3">
                           <motion.div variants={iconVariants}>
                             <Icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-gray-400 group-hover:text-gray-600")} />
                           </motion.div>
                           {item.label}
                         </div>
-
-                        {/* --- MAGNETIC DOT --- */}
                         {isActive && (
                           <motion.div 
                             layoutId="activeIndicator"
-                            className="h-1.5 w-1.5 rounded-full bg-primary relative z-10"
-                            transition={{ 
-                              type: "spring", 
-                              stiffness: 500, 
-                              damping: 35,
-                              mass: 0.8 
-                            }}
+                            className="h-1.5 w-1.5 rounded-full bg-primary" 
                           />
                         )}
                       </motion.div>

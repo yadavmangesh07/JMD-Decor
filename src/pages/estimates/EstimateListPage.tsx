@@ -249,7 +249,7 @@ export default function EstimateListPage() {
                   >
                     {/* 👇 FIX: Wrapper Div added for Vertical Centering */}
                     <TableCell>
-                        <div className="flex items-center gap-2 font-medium">
+                        <div className="flex items-center gap-2 font-bold">
                             <FileText className="h-4 w-4 text-orange-500" />
                             <span>{est.estimateNo || "N/A"}</span>
                         </div>
