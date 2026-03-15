@@ -157,7 +157,7 @@ export function MainLayout() {
                         initial="idle"
                         className={cn(
                           "group flex items-center justify-between rounded-md px-3 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer",
-                          isActive ? "bg-primary/10 text-primary shadow-sm" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          isActive ? "bg-primary/10 text-primary shadow-sm" : "text-gray-900 hover:bg-gray-50 hover:text-gray-900"
                         )}
                       >
                         <div className="flex items-center gap-3">
@@ -180,7 +180,7 @@ export function MainLayout() {
             </motion.div>
           ))}
         </nav>
-        <div className="p-4 border-t text-xs text-center text-gray-400">JMD Decor v1.0</div>
+        <div className="p-4 border-t text-xs text-center text-gray-600">JMD Decor v1.0</div>
       </aside>
 
       {/* --- MAIN CONTENT --- */}
