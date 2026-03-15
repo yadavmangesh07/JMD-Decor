@@ -11,23 +11,38 @@ export default defineConfig({
   },
 
   build: {
-    chunkSizeWarningLimit: 1000, // Bump to 1000 to be safe
+    // Increased to 1500 to stop the nagging warning while we optimize
+    chunkSizeWarningLimit: 1500, 
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // 1. Separate React core (The biggest part of the vendor)
-          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
-            return 'react-core';
+          // 1. Core Framework
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('react-router')) {
+            return 'framework';
           }
-          // 2. Separate UI libraries (Radix, Shadcn dependencies)
-          if (id.includes('@radix-ui') || id.includes('lucide-react')) {
-            return 'ui-kit';
+          
+          // 2. Lucide Icons (Often a major bloat factor in Shadcn apps)
+          if (id.includes('node_modules/lucide-react')) {
+            return 'ui-icons';
           }
-          // 3. Separate Framer Motion
+
+          // 3. UI & Radix (The bones of your components)
+          if (id.includes('@radix-ui') || id.includes('class-variance-authority') || id.includes('clsx')) {
+            return 'ui-vendor';
+          }
+          
+          // 4. Heavy Animations
           if (id.includes('framer-motion')) {
             return 'animations';
           }
-          // 4. Everything else in node_modules goes to 'vendor'
+
+          // 5. PDF Generation or Heavy Utilities (Targeting the 1.9MB remainder)
+          // If you use libraries like jspdf, date-fns, or axios, this pulls them out
+          if (id.includes('jspdf') || id.includes('date-fns') || id.includes('axios') || id.includes('tanstack')) {
+            return 'utils';
+          }
+
+          // 6. General Vendor (The catch-all for remaining small libs)
           if (id.includes('node_modules')) {
             return 'vendor';
           }
