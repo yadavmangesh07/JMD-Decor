@@ -9,23 +9,25 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+
   build: {
-    // 1. Increase the limit slightly so it's less sensitive
-    chunkSizeWarningLimit: 800, 
-    
+    chunkSizeWarningLimit: 1000, // Bump to 1000 to be safe
     rollupOptions: {
       output: {
-        // 2. Advanced Chunk Splitting
         manualChunks(id) {
-          // Group Lucide icons into their own file
-          if (id.includes('lucide-react')) {
-            return 'ui-icons';
+          // 1. Separate React core (The biggest part of the vendor)
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'react-core';
           }
-          // Group Framer Motion (heavy) into its own file
+          // 2. Separate UI libraries (Radix, Shadcn dependencies)
+          if (id.includes('@radix-ui') || id.includes('lucide-react')) {
+            return 'ui-kit';
+          }
+          // 3. Separate Framer Motion
           if (id.includes('framer-motion')) {
             return 'animations';
           }
-          // Group core React vendor files
+          // 4. Everything else in node_modules goes to 'vendor'
           if (id.includes('node_modules')) {
             return 'vendor';
           }
