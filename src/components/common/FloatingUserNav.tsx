@@ -29,7 +29,7 @@ export function FloatingUserNav() {
   const isAdmin = user.role === 'ADMIN';
 
   return (
-    <div className="fixed top-5 right-6 z-[100]">
+    <div className="fixed top-4 right-5 z-[100] ">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 

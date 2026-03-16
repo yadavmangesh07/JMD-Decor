@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 import {
   Area,
@@ -6,20 +6,21 @@ import {
   CartesianGrid,
   XAxis,
   YAxis,
-  // ResponsiveContainer removed to fix console warnings
 } from "recharts";
 import {
   IndianRupee,
   Users,
   FileText,
   Activity,
-  Clock // Added Clock icon
+  Clock,
+  RefreshCw 
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import apiClient from "@/lib/axios";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 import {
   ChartContainer,
@@ -43,31 +44,44 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null); // State for timestamp
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  const loadData = useCallback(async (isManual = false) => {
+    if (isManual) setIsRefreshing(true);
+    try {
+      const [statsRes, clientsData] = await Promise.all([
+          apiClient.get("/dashboard/stats"),
+          clientService.getAll()
+      ]);
+
+      const dashboardData = statsRes.data;
+      setStats(dashboardData);
+
+      // FIX: Derive last updated from the latest invoice timestamp
+      if (dashboardData.recentInvoices && dashboardData.recentInvoices.length > 0) {
+        const latestDate = dashboardData.recentInvoices[0].issuedAt;
+        setLastUpdated(new Date(latestDate));
+      } else {
+        // Fallback to current time only if no invoices exist
+        setLastUpdated(new Date());
+      }
+
+      if (Array.isArray(clientsData)) setClients(clientsData);
+      else if ((clientsData as any)?.content) setClients((clientsData as any).content);
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [statsRes, clientsData] = await Promise.all([
-            apiClient.get("/dashboard/stats"),
-            clientService.getAll()
-        ]);
-
-        setStats(statsRes.data);
-        setLastUpdated(new Date()); // Update timestamp on success
-
-        if (Array.isArray(clientsData)) setClients(clientsData);
-        else if ((clientsData as any)?.content) setClients((clientsData as any).content);
-
-      } catch (error) {
-        console.error(error);
-        toast.error("Failed to load dashboard data");
-      } finally {
-        setLoading(false);
-      }
-    };
     loadData();
-  }, []);
+  }, [loadData]);
 
   const getClientName = (clientId: string) => {
       if (!clientId) return "Unknown Client";
@@ -90,7 +104,12 @@ export default function DashboardPage() {
   };
 
   if (loading) {
-    return <div className="flex h-[50vh] items-center justify-center text-muted-foreground">Loading Dashboard...</div>;
+    return (
+      <div className="flex h-[50vh] flex-col items-center justify-center gap-4 text-muted-foreground">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <p className="font-medium animate-pulse">Syncing Dashboard...</p>
+      </div>
+    );
   }
 
   if (!stats) return <div className="p-8 text-center">No data available.</div>;
@@ -103,19 +122,32 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">Overview of your business performance.</p>
         </div>
         
-        {/* New Last Updated Section */}
-        {lastUpdated && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" />
-            <span className="text-xs font-medium">
-              Last updated: {format(lastUpdated, "hh:mm a")}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {lastUpdated && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border text-muted-foreground shadow-sm">
+              <Clock className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">
+                Data from: {format(lastUpdated, "hh:mm a")} 
+                <span className="ml-1 opacity-70">({formatDistanceToNow(lastUpdated, { addSuffix: true })})</span>
+              </span>
+            </div>
+          )}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => loadData(true)}
+            disabled={isRefreshing}
+            className="h-9 shadow-sm"
+          >
+            <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
+            Refresh
+          </Button>
+        </div>
       </div>
       
+      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             <IndianRupee className="h-4 w-4 text-primary" />
@@ -126,7 +158,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Dues</CardTitle>
             <Activity className="h-4 w-4 text-destructive" />
@@ -137,7 +169,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
             <Users className="h-4 w-4 text-blue-500" />
@@ -148,7 +180,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
             <FileText className="h-4 w-4 text-orange-500" />
@@ -161,8 +193,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        
-        <Card className="col-span-4">
+        {/* Revenue Chart */}
+        <Card className="col-span-4 shadow-sm">
           <CardHeader>
             <CardTitle>Revenue Overview</CardTitle>
             <CardDescription>Monthly revenue trends.</CardDescription>
@@ -178,12 +210,7 @@ export default function DashboardPage() {
                   width={568}
                   height={350}
                   data={stats.monthlyStats}
-                  margin={{
-                    top: 10,
-                    right: 10,
-                    left: 0,
-                    bottom: 0,
-                  }}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                 >
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -219,7 +246,6 @@ export default function DashboardPage() {
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorRevenue)"
-                    isAnimationActive={true}
                   />
                 </AreaChart>
               )}
@@ -227,7 +253,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="col-span-3 lg:h-[450px] flex flex-col">
+        {/* Recent Invoices */}
+        <Card className="col-span-3 lg:h-[450px] flex flex-col shadow-sm">
           <CardHeader>
             <CardTitle>Recent Invoices</CardTitle>
             <CardDescription>Latest transactions</CardDescription>
@@ -238,9 +265,9 @@ export default function DashboardPage() {
                 <p className="text-sm text-muted-foreground text-center py-8">No recent activity.</p>
               ) : (
                 stats.recentInvoices.map((inv: Invoice) => (
-                  <div key={inv.id} className="flex items-center justify-between">
+                  <div key={inv.id} className="flex items-center justify-between group">
                     <div className="space-y-1">
-                      <p className="text-sm font-medium leading-none">
+                      <p className="text-sm font-semibold leading-none group-hover:text-primary transition-colors">
                         {getClientName(inv.clientId)}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -249,12 +276,12 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex flex-col items-end gap-1">
                         <div className="font-bold text-sm">
-                            ₹{(inv.total || 0).toFixed(2)}
+                            ₹{(inv.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </div>
                         <Badge 
                           variant="outline" 
                           className={cn(
-                            "text-[10px] h-5 px-2 capitalize border", 
+                            "text-[10px] h-5 px-2 capitalize border shadow-none", 
                             getStatusStyle(inv.status)
                           )}
                         >

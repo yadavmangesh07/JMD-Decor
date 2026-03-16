@@ -95,7 +95,7 @@ export function MainLayout() {
       title: "Operations",
       items: [
         { href: "/challans", label: "Delivery Challans", icon: Truck },
-        { href: "/wcc", label: "Work Certificates", icon: FileCheck },
+        { href: "/wcc", label: "Work Certificates (WCC)", icon: FileCheck },
       ]
     },
     {
@@ -142,7 +142,7 @@ export function MainLayout() {
               animate="visible"
               variants={navGroupVariants}
             >
-              <h3 className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+              <h3 className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wider text-gray-500">
                 {group.title}
               </h3>
               <div className="space-y-1">

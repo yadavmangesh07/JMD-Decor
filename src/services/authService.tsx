@@ -11,33 +11,22 @@ export const authService = {
   // 1. LOGIN: Saves Token AND User Role to localStorage
   login: async (creds: LoginRequest) => {
     console.log("Attempting login with:", creds.username); 
-    
-    // We use 'any' here to safely handle different Axios interceptor configurations
     const response: any = await apiClient.post("/auth/login", creds);
-    
-    console.log("Server Response:", response); 
-
-    // Handle standard Axios response (response.data) OR intercepted response (response directly)
     const data = response.data || response;
 
     const token = data.token;
-    const role = data.role || "USER"; // Default to USER if backend forgets to send it
+    const role = data.role || "USER"; 
     const username = data.username || creds.username;
 
     if (token) {
       localStorage.setItem("token", token);
-      
-      // 👇 CRITICAL: Save user details so SettingsPage can check permissions
       localStorage.setItem("user", JSON.stringify({ username, role }));
-      
       return { token, role, username };
     } else {
-      console.error("Token missing in response:", response);
       throw new Error("Login failed: No token received");
     }
   },
 
-  // 2. GET CURRENT USER: Reads from localStorage (Fixes the missing property error)
   getCurrentUser: (): User | null => {
     const userStr = localStorage.getItem("user");
     if (userStr) {
@@ -50,56 +39,71 @@ export const authService = {
     return null;
   },
 
-  // 3. GET ALL USERS: Fetches list for Admin view
   getAllUsers: async () => {
     const response: any = await apiClient.get<User[]>("/auth/users");
-    // Handle if interceptor returns array directly vs standard axios object
     return Array.isArray(response) ? response : (response.data || []);
   },
 
-  // 4. REGISTER: Creates new user (Admin only usually)
   register: async (username: string, password: string, role: string = "USER") => {
     return await apiClient.post("/auth/register", { username, password, role });
   },
 
-  // 5. DELETE USER
   deleteUser: async (id: string) => {
     await apiClient.delete(`/auth/users/${id}`);
   },
 
-  // 6. VERIFY PASSWORD: Used before saving sensitive settings
   verifyPassword: async (password: string) => {
     const response = await apiClient.post("/auth/verify-password", { password });
     return response.data || response;
   },
 
-  // 7. UTILS
   logout: () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    window.location.href = "/login";
+    // Using replace to prevent users from clicking 'back' into a protected route
+    window.location.replace("/login");
   },
 
-  isAuthenticated: () => {
-    return !!localStorage.getItem("token");
+  // 👇 UPDATED: Now checks for token existence AND expiration
+  isAuthenticated: (): boolean => {
+    const token = localStorage.getItem("token");
+    if (!token) return false;
+
+    try {
+      // JWTs are Base64 encoded. The second part (index 1) contains the payload.
+      const payloadBase64 = token.split('.')[1];
+      const decodedPayload = JSON.parse(window.atob(payloadBase64));
+      
+      // Check if current time (in seconds) is greater than expiry time
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      if (decodedPayload.exp && decodedPayload.exp < currentTime) {
+        console.warn("Auth: Token has expired");
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Auth: Token validation failed", error);
+      return false;
+    }
   },
 
   getToken: () => {
     return localStorage.getItem("token");
   },
-  // Add this inside the authService object
-updateCurrentUser: async (data: { username: string; currentPassword: string; newPassword?: string }) => {
-  const response = await apiClient.put("/auth/me", data);
-  
-  // If username changed, update local storage
-  if (data.username) {
-     const userStr = localStorage.getItem("user");
-     if (userStr) {
-         const user = JSON.parse(userStr);
-         user.username = data.username;
-         localStorage.setItem("user", JSON.stringify(user));
-     }
-  }
-  return response.data;
-},
+
+  updateCurrentUser: async (data: { username: string; currentPassword: string; newPassword?: string }) => {
+    const response = await apiClient.put("/auth/me", data);
+    
+    if (data.username) {
+       const userStr = localStorage.getItem("user");
+       if (userStr) {
+           const user = JSON.parse(userStr);
+           user.username = data.username;
+           localStorage.setItem("user", JSON.stringify(user));
+       }
+    }
+    return response.data;
+  },
 };
