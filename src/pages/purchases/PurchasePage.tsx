@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Plus, Download, FileSpreadsheet } from "lucide-react"; // 👈 Added Icons
+import { Plus, FileSpreadsheet } from "lucide-react"; // 👈 Added Icons
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
