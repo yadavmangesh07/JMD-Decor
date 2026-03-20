@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react"; // 👈 Added useEffect
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useNavigate } from "react-router-dom";
-import { Lock, User, Building2, Eye, EyeOff, Loader2 } from "lucide-react"; // 👈 Added Loader2
+import { Lock, User, Building2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 import { authService } from "@/services/authService";
-import apiClient from "@/lib/axios"; // 👈 Ensure apiClient is imported
+import apiClient from "@/lib/axios";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -35,23 +35,25 @@ export default function LoginPage() {
   const [logoError, setLogoError] = useState(false);
 
   /**
-   * 🚀 WARM-UP STRATEGY
-   * This pings the backend immediately when the user sees the login page.
-   * If the server or DB is asleep (Vercel Cold Start), it starts waking up 
-   * while the user is busy typing.
+   * 🚀 PERFORMANCE STRATEGY
+   * 1. Wake-up: Hits the public health route to warm up JVM and DB.
+   * 2. Preload: Downloads the Dashboard JS chunk while the user is typing.
    */
   useEffect(() => {
     const wakeUpServer = async () => {
       try {
-        // Ping any light endpoint (dashboard stats or a dedicated /health)
-        // Even a 401/404 from the server is enough to wake it up!
-        await apiClient.get("/dashboard/stats");
+        // Ping the new deep-health route we created
+        await apiClient.get("/api/public/health");
       } catch (e) {
-        // We don't care about the error here; the goal was just the "ping"
-        console.log("Server wake-up signal sent.");
+        console.log("Server warm-up ping sent.");
       }
     };
+
+    // Browser downloads the Dashboard code in the background
+    const preloadDashboard = () => import("../dashboard/DashboardPage");
+
     wakeUpServer();
+    preloadDashboard();
   }, []);
 
   const form = useForm<LoginFormValues>({
@@ -67,6 +69,7 @@ export default function LoginPage() {
     try {
       await authService.login(values);
       toast.success("Welcome back!");
+      // Navigation is now instant because the code was pre-fetched
       navigate("/dashboard");
     } catch (error) {
       console.error(error);
@@ -103,7 +106,6 @@ export default function LoginPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              
               <FormField
                 control={form.control}
                 name="username"
@@ -141,11 +143,7 @@ export default function LoginPage() {
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
                         >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
                     </FormControl>

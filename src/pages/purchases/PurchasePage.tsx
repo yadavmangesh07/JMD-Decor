@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Download, FileSpreadsheet } from "lucide-react"; // 👈 Added Icons
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
 
 import { purchaseService } from "@/services/purchaseService";
 import type { Purchase, PurchaseStats } from "@/types";
+import { exportPurchasesToExcel } from "@/lib/exportUtils"; // 👈 Import the utility
 
 // Components
 import { PurchaseForm } from "./PurchaseForm"; 
@@ -20,13 +21,14 @@ import { PurchaseStatsCards } from "./PurchaseStatsCards";
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [stats, setStats] = useState<{ monthly: PurchaseStats; yearly: PurchaseStats } | null>(null);
+  const [isExporting, setIsExporting] = useState(false); // 👈 Export loading state
   
   // Modal States
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingData, setEditingData] = useState<Purchase | null>(null);
   const [viewData, setViewData] = useState<Purchase | null>(null); 
 
-  // Filter States (Default to Current Month/Year)
+  // Filter States
   const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth() + 1));
   const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
 
@@ -36,31 +38,46 @@ export default function PurchasesPage() {
     return [...new Set(stores)];
   }, [purchases]);
 
-  // Load Data on Mount & When Filters Change
   useEffect(() => {
     loadData();
   }, [selectedMonth, selectedYear]);
 
   const loadData = async () => {
     try {
-      // 1. Load All Purchases
       const data = await purchaseService.getAll();
       setPurchases(data);
 
-      // 2. Load Stats (Using the Service now, not hardcoded fetch)
       try {
         const statsData = await purchaseService.getStats(parseInt(selectedMonth), parseInt(selectedYear));
         setStats(statsData);
       } catch (err) {
         console.error("Failed to load stats", err);
       }
-      
     } catch (error) {
       console.error("Failed to load purchases", error);
+      toast.error("Failed to sync purchases");
     }
   };
 
-  // Filter Purchases Client-Side for the Table
+  // 🟢 EXCEL EXPORT HANDLER
+  const handleExport = async () => {
+    if (filteredPurchases.length === 0) {
+      return toast.error("No purchases found for the selected month to export.");
+    }
+    
+    setIsExporting(true);
+    try {
+      // We pass the current filtered list. 
+      // Note: If you want to export ALL purchases (ignoring filters), pass 'purchases' instead.
+      exportPurchasesToExcel(filteredPurchases);
+      toast.success("Excel report downloaded successfully");
+    } catch (error) {
+      toast.error("Failed to generate Excel report");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const filteredPurchases = useMemo(() => {
     return purchases.filter(p => {
       if (!p.invoiceDate) return false;
@@ -69,37 +86,19 @@ export default function PurchasesPage() {
     });
   }, [purchases, selectedMonth, selectedYear]);
 
-  const handleAddNew = () => {
-    setEditingData(null);
-    setIsFormOpen(true);
-  };
-
-  const handleEdit = (purchase: Purchase) => {
-    setEditingData(purchase);
-    setIsFormOpen(true);
-  };
-
-  // Handler for View Details
-  const handleView = (purchase: Purchase) => {
-    setViewData(purchase);
-  };
-
+  // ... (handleAddNew, handleEdit, handleView, handleDelete, handleFormSuccess remain same)
+  const handleAddNew = () => { setEditingData(null); setIsFormOpen(true); };
+  const handleEdit = (purchase: Purchase) => { setEditingData(purchase); setIsFormOpen(true); };
+  const handleView = (purchase: Purchase) => { setViewData(purchase); };
   const handleDelete = async (id: string) => {
     try {
       await purchaseService.delete(id);
       toast.success("Record deleted");
       loadData();
-    } catch (error) {
-      toast.error("Failed to delete");
-    }
+    } catch (error) { toast.error("Failed to delete"); }
   };
+  const handleFormSuccess = () => { setIsFormOpen(false); loadData(); };
 
-  const handleFormSuccess = () => {
-    setIsFormOpen(false);
-    loadData();
-  };
-
-  // Helper to get Month Name for UI
   const currentMonthName = new Date(parseInt(selectedYear), parseInt(selectedMonth) - 1).toLocaleString('default', { month: 'long' });
 
   return (
@@ -135,13 +134,24 @@ export default function PurchasesPage() {
                 </SelectContent>
             </Select>
 
+            {/* 🟢 Export Button */}
+            <Button 
+              variant="outline" 
+              onClick={handleExport} 
+              disabled={isExporting}
+              className="hidden md:flex border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+            >
+                <FileSpreadsheet className="mr-2 h-4 w-4" /> 
+                {isExporting ? "Exporting..." : "Excel Report"}
+            </Button>
+
             <Button onClick={handleAddNew}>
                 <Plus className="mr-2 h-4 w-4" /> Add Purchase
             </Button>
         </div>
       </div>
 
-      {/* 2. Stats Cards Section */}
+      {/* Stats, List, and Modals remain exactly as they were... */}
       {stats && (
           <PurchaseStatsCards 
             monthly={stats.monthly} 
@@ -150,15 +160,13 @@ export default function PurchasesPage() {
           />
       )}
 
-      {/* 3. List Component */}
       <PurchaseList 
         data={filteredPurchases} 
         onEdit={handleEdit} 
         onDelete={handleDelete}
-        onRowClick={handleView} // 👈 Uncommented this so clicking rows works!
+        onRowClick={handleView} 
       />
 
-      {/* 4. Add/Edit Form Modal */}
       <PurchaseForm 
         isOpen={isFormOpen} 
         onClose={() => setIsFormOpen(false)} 
@@ -167,7 +175,6 @@ export default function PurchasesPage() {
         existingStores={existingStores}
       />
 
-      {/* 5. View Details Modal */}
       <Dialog open={!!viewData} onOpenChange={(open) => !open && setViewData(null)}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -176,7 +183,6 @@ export default function PurchasesPage() {
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-             {/* Key Details Grid */}
              <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
                 <div>
                     <label className="text-xs text-muted-foreground block">Store Name</label>
@@ -210,7 +216,6 @@ export default function PurchasesPage() {
                 </div>
              </div>
              
-             {/* Remarks Section */}
              <div className="bg-muted/40 p-3 rounded-md border mt-2">
                 <label className="text-xs text-muted-foreground font-semibold flex items-center gap-2">
                     Remarks / Notes
