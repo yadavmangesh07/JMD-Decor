@@ -9,8 +9,151 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { companyService } from "@/services/companyService";
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function CompanyProfileSkeleton() {
+  return (
+    <div className="space-y-6 max-w-5xl mx-auto pb-10">
+      {/* Page Header */}
+      <div className="space-y-2">
+        <Skeleton className="h-9 w-52" />
+        <Skeleton className="h-4 w-64" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        {/* ── Left Column ── */}
+        <div className="md:col-span-2 space-y-6">
+
+          {/* Card 1 — Identity */}
+          <Card className="overflow-hidden">
+            {/* Banner */}
+            <Skeleton className="h-24 w-full rounded-none" />
+            <CardContent className="pt-0 -mt-12 px-6 pb-6">
+              <div className="flex justify-between items-start">
+                {/* Logo */}
+                <Skeleton className="h-24 w-24 rounded-xl border-4 border-white" />
+                {/* Badge */}
+                <Skeleton className="h-6 w-28 rounded-full mt-14" />
+              </div>
+              <div className="mt-4 space-y-3">
+                <Skeleton className="h-7 w-56" />
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded-full shrink-0" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded-full shrink-0" />
+                    <Skeleton className="h-4 w-36" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4 rounded-full shrink-0" />
+                    <Skeleton className="h-4 w-44" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card 2 — Address & Legal */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5 rounded" />
+                <Skeleton className="h-5 w-36" />
+              </div>
+            </CardHeader>
+            <CardContent className="grid gap-6 md:grid-cols-2">
+              {/* Address */}
+              <div className="space-y-2">
+                <Skeleton className="h-3.5 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+              {/* Legal fields */}
+              <div className="space-y-3">
+                <div className="p-3 bg-gray-50 rounded-md flex justify-between items-center border">
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-4 w-36" />
+                  </div>
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+                <div className="p-3 bg-gray-50 rounded-md flex justify-between items-center border">
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-4 w-36" />
+                  </div>
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Right Column ── */}
+        <div className="space-y-6">
+
+          {/* Card 3 — Bank (dark) */}
+          <Card className="bg-slate-900 border-slate-800">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5 rounded bg-slate-700" />
+                <Skeleton className="h-5 w-28 bg-slate-700" />
+              </div>
+              <Skeleton className="h-3.5 w-40 bg-slate-700 mt-1" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-16 bg-slate-700" />
+                <Skeleton className="h-6 w-40 bg-slate-700" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-24 bg-slate-700" />
+                <Skeleton className="h-4 w-36 bg-slate-700" />
+              </div>
+              <Separator className="bg-slate-700" />
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-3 w-24 bg-slate-700" />
+                    <Skeleton className="h-7 w-40 bg-slate-700" />
+                  </div>
+                  <Skeleton className="h-8 w-8 rounded-md bg-slate-700" />
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-3 w-16 bg-slate-700" />
+                    <Skeleton className="h-6 w-28 bg-slate-700" />
+                  </div>
+                  <Skeleton className="h-8 w-8 rounded-md bg-slate-700" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Card 4 — Signature */}
+          <Card>
+            <CardHeader className="pb-3">
+              <Skeleton className="h-5 w-40" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-24 w-full rounded-md" />
+            </CardContent>
+          </Card>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function CompanyProfilePage() {
   const [profile, setProfile] = useState<any>(null);
@@ -37,7 +180,7 @@ export default function CompanyProfilePage() {
     toast.success(`${label} copied to clipboard!`);
   };
 
-  if (loading) return <div className="p-8">Loading profile...</div>;
+  if (loading) return <CompanyProfileSkeleton />;
   if (!profile) return <div className="p-8">No profile data found. Please configure in Settings.</div>;
 
   return (
@@ -66,17 +209,14 @@ export default function CompanyProfilePage() {
                      <Building2 className="h-10 w-10 text-gray-300" />
                    )}
                 </div>
-                {/* Status Badge */}
                 <Badge variant="secondary" className="mt-14">Active Business</Badge>
               </div>
               
               <div className="mt-4">
                 <h2 className="text-2xl font-bold">{profile.companyName || "Company Name Not Set"}</h2>
                 
-                {/* 👇 UPDATED: Contact Details Section */}
                 <div className="flex flex-col gap-2 mt-3 text-gray-600 text-sm">
                    
-                   {/* Email Row */}
                    {profile.email && (
                      <div className="flex items-center gap-2">
                        <Mail className="h-4 w-4 text-blue-600 shrink-0" /> 
@@ -87,7 +227,6 @@ export default function CompanyProfilePage() {
                      </div>
                    )}
 
-                   {/* Phone Row */}
                    {profile.phone && (
                      <div className="flex items-center gap-2">
                        <Phone className="h-4 w-4 text-green-600 shrink-0" /> 
@@ -98,7 +237,6 @@ export default function CompanyProfilePage() {
                      </div>
                    )}
 
-                   {/* Website Row */}
                    {profile.website && (
                      <div className="flex items-center gap-2">
                        <Globe className="h-4 w-4 text-purple-600 shrink-0" /> 
@@ -108,7 +246,6 @@ export default function CompanyProfilePage() {
                      </div>
                    )}
                 </div>
-
               </div>
             </CardContent>
           </Card>

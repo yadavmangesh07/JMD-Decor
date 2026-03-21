@@ -21,6 +21,7 @@ import apiClient from "@/lib/axios";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import {
   ChartContainer,
@@ -40,6 +41,115 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+// ─── Skeleton: Stats Cards ────────────────────────────────────────────────────
+function StatsCardSkeleton() {
+  return (
+    <Card className="shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="h-4 w-4 rounded-full" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-8 w-32 mb-2" />
+        <Skeleton className="h-3 w-24" />
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Skeleton: Revenue Chart ──────────────────────────────────────────────────
+function RevenueChartSkeleton() {
+  return (
+    <Card className="col-span-4 shadow-sm">
+      <CardHeader>
+        <Skeleton className="h-5 w-36 mb-1" />
+        <Skeleton className="h-3 w-44" />
+      </CardHeader>
+      <CardContent className="pl-2">
+        <div className="h-[350px] w-full flex flex-col justify-end gap-2 px-4">
+          {/* Fake bars to simulate a chart */}
+          <div className="flex items-end gap-3 h-[280px]">
+            {[55, 80, 45, 90, 65, 75, 50, 85, 60, 95, 70, 40].map((h, i) => (
+              <Skeleton
+                key={i}
+                className="flex-1 rounded-t-md opacity-60"
+                style={{ height: `${h}%` }}
+              />
+            ))}
+          </div>
+          {/* X-axis labels */}
+          <div className="flex gap-3">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <Skeleton key={i} className="flex-1 h-3 rounded" />
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Skeleton: Recent Invoices ────────────────────────────────────────────────
+function RecentInvoicesSkeleton() {
+  return (
+    <Card className="col-span-3 lg:h-[450px] flex flex-col shadow-sm">
+      <CardHeader>
+        <Skeleton className="h-5 w-32 mb-1" />
+        <Skeleton className="h-3 w-28" />
+      </CardHeader>
+      <CardContent className="flex-1 overflow-auto">
+        <div className="space-y-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between">
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-3 w-36" />
+              </div>
+              <div className="flex flex-col items-end gap-1.5">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-5 w-14 rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Skeleton: Full Dashboard ─────────────────────────────────────────────────
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 p-6 pb-10">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="space-y-2">
+          <Skeleton className="h-9 w-40" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-9 w-48 rounded-lg" />
+          <Skeleton className="h-9 w-24 rounded-md" />
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <StatsCardSkeleton key={i} />
+        ))}
+      </div>
+
+      {/* Chart + Invoices */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <RevenueChartSkeleton />
+        <RecentInvoicesSkeleton />
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [clients, setClients] = useState<any[]>([]); 
@@ -58,12 +168,10 @@ export default function DashboardPage() {
       const dashboardData = statsRes.data;
       setStats(dashboardData);
 
-      // FIX: Derive last updated from the latest invoice timestamp
       if (dashboardData.recentInvoices && dashboardData.recentInvoices.length > 0) {
         const latestDate = dashboardData.recentInvoices[0].issuedAt;
         setLastUpdated(new Date(latestDate));
       } else {
-        // Fallback to current time only if no invoices exist
         setLastUpdated(new Date());
       }
 
@@ -103,14 +211,8 @@ export default function DashboardPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-[50vh] flex-col items-center justify-center gap-4 text-muted-foreground">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="font-medium animate-pulse">Syncing Dashboard...</p>
-      </div>
-    );
-  }
+  // ── Show skeleton on initial load ──────────────────────────────────────────
+  if (loading) return <DashboardSkeleton />;
 
   if (!stats) return <div className="p-8 text-center">No data available.</div>;
 
