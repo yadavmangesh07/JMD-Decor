@@ -20,7 +20,6 @@ import { wccService } from "@/services/wccService";
 import { clientService } from "@/services/clientService";
 import type { WCCData } from "@/types/wccTypes";
 import { generateWCCPdf } from "@/services/wccPdfService";
-import { cn } from "@/lib/utils";
 
 // ─── Skeleton Row ──────────────────────────────────────────────────────────────
 
