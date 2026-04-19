@@ -33,6 +33,7 @@ export default function WCCFormPage() {
 
   const { register, control, handleSubmit, reset, setValue, watch } = useForm<WCCData>({
     defaultValues: {
+      refNo: "", // 🟢 Initialized for manual input
       certificateDate: format(new Date(), "dd-MM-yyyy"),
       items: [{ srNo: 1, activity: "", qty: "" }],
       companyName: "JMD DECOR",
@@ -49,7 +50,6 @@ export default function WCCFormPage() {
     const init = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Clients first
             const clientData: any = await clientService.getAll();
             let loadedClients: any[] = [];
             
@@ -58,11 +58,9 @@ export default function WCCFormPage() {
             
             setClients(loadedClients);
 
-            // 2. Fetch WCC if Edit Mode
             if (isEditMode) {
                 const data = await wccService.getById(id!);
 
-                // --- DATE FORMATTING ---
                 if (data.certificateDate) {
                     try {
                         data.certificateDate = format(new Date(data.certificateDate), "dd-MM-yyyy");
@@ -74,19 +72,13 @@ export default function WCCFormPage() {
                     } catch (e) { console.error("Invalid PO Date", e); }
                 }
 
-                // --- 👇 UPDATED: FULL SYNC OF ALL CLIENT DETAILS ---
                 if (data.clientId) {
                     const latestClient = loadedClients.find((c: any) => c.id === data.clientId);
                     if (latestClient) {
-                        // 1. Sync Names
                         data.storeName = latestClient.name;
                         data.clientName = latestClient.name;
-                        
-                        // 2. Sync GSTIN (Force update)
                         data.gstin = latestClient.gstin || "";
 
-                        // 3. Sync Full Address (Address + State + Pincode)
-                        // We construct a cleaner address string from the client profile
                         let fullAddress = latestClient.address || "";
                         if (latestClient.state) {
                             fullAddress += fullAddress ? `, ${latestClient.state}` : latestClient.state;
@@ -95,13 +87,11 @@ export default function WCCFormPage() {
                             fullAddress += fullAddress ? ` - ${latestClient.pincode}` : latestClient.pincode;
                         }
 
-                        // Overwrite project location if we found client details
                         if (fullAddress.trim()) {
                             data.projectLocation = fullAddress;
                         }
                     }
                 }
-                // ----------------------------------------------------
 
                 if(!data.items || data.items.length === 0) {
                     data.items = [{ srNo: 1, activity: "", qty: "" }];
@@ -128,7 +118,6 @@ export default function WCCFormPage() {
           setValue("storeName", client.name);
           setValue("clientName", client.name);
           
-          // Construct Full Address on Selection too
           let fullAddress = client.address || "";
           if (client.state) fullAddress += `, ${client.state}`;
           if (client.pincode) fullAddress += ` - ${client.pincode}`;
@@ -163,9 +152,11 @@ export default function WCCFormPage() {
         toast.success("Certificate created successfully");
       }
       navigate("/wcc");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error(isEditMode ? "Failed to update" : "Failed to create");
+      // 🟢 Improved error feedback for manual Ref No collisions
+      const msg = error.response?.data?.message || "Failed to save certificate";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -206,9 +197,6 @@ export default function WCCFormPage() {
                         <option key={c.id} value={c.id}>{c.name}</option>
                     ))}
                 </select>
-                <p className="text-xs text-muted-foreground">
-                    Selecting a client will link this certificate to their profile automatically.
-                </p>
             </div>
             <input type="hidden" {...register("clientId")} />
 
@@ -217,18 +205,17 @@ export default function WCCFormPage() {
                 <Input placeholder="e.g. DUA LIMA RETAIL..." {...register("storeName", { required: true })} />
             </div>
 
+            {/* 🟢 MODIFIED: Ref No is now EDITABLE */}
             <div className="space-y-2">
                 <Label>Ref No.</Label>
                 <Input 
-                    placeholder={isEditMode ? "e.g. JMD/2024-25/86" : "(Auto-generated on save)"} 
-                    {...register("refNo")} 
-                    disabled={!isEditMode} 
+                    placeholder="e.g. JMD/WCC/2025-26/01" 
+                    {...register("refNo", { required: true })} 
+                    disabled={false} // 👈 Enabled
                 />
-                {!isEditMode && (
-                    <p className="text-xs text-muted-foreground">
-                        Will be generated automatically (e.g., JMD/2025-26/1)
-                    </p>
-                )}
+                <p className="text-xs text-muted-foreground">
+                    Enter a unique reference number.
+                </p>
             </div>
 
             <div className="space-y-2 md:col-span-2">
@@ -320,6 +307,7 @@ export default function WCCFormPage() {
           </CardContent>
         </Card>
 
+        {/* ... (Work Items Card remains exactly the same as your code) */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Work Items</CardTitle>

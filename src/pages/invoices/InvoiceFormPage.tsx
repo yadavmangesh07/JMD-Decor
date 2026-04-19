@@ -23,6 +23,7 @@ import { clientService } from "@/services/clientService";
 import type { Client } from "@/types";
 
 const invoiceSchema = z.object({
+  invoiceNo: z.string().min(1, "Invoice Number is required"), // 🟢 Added for manual entry
   clientId: z.string().min(1, "Client is required"),
   status: z.string(),
   issuedAt: z.string(),
@@ -57,7 +58,10 @@ export default function InvoiceFormPage() {
   const form = useForm({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
-      clientId: "", status: "DRAFT", issuedAt: formatISO(new Date(), { representation: 'date' }),
+      invoiceNo: "", // 🟢 Added
+      clientId: "", 
+      status: "DRAFT", 
+      issuedAt: formatISO(new Date(), { representation: 'date' }),
       dueDate: "", billingAddress: "", shippingAddress: "",
       transportMode: "", ewayBillNo: "", challanNo: "", challanDate: "", poNumber: "", poDate: "",
       tax: 0,
@@ -66,8 +70,6 @@ export default function InvoiceFormPage() {
   });
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "items" });
-  
-  // 👇 UseWatch ensures totals update instantly without lag
   const watchedItems = useWatch({ control: form.control, name: "items" });
 
   useEffect(() => {
@@ -81,6 +83,7 @@ export default function InvoiceFormPage() {
                 // @ts-ignore
                 const invoice = await invoiceService.getById(id!);
                 form.reset({
+                  invoiceNo: invoice.invoiceNo || "", // 🟢 Resetting manual field
                   clientId: invoice.clientId,
                   status: invoice.status,
                   issuedAt: invoice.issuedAt ? invoice.issuedAt.split('T')[0] : "",
@@ -170,9 +173,11 @@ export default function InvoiceFormPage() {
         toast.success("Invoice created");
       }
       navigate("/invoices");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Failed to save invoice");
+      // 🟢 Catching specific backend error (e.g. duplicate invoice number)
+      const errorMsg = error.response?.data?.message || "Failed to save invoice";
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -201,7 +206,19 @@ export default function InvoiceFormPage() {
             
             <Card>
                 <CardHeader><CardTitle>Basic Details</CardTitle></CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-6"> {/* 🟢 Changed to grid-cols-4 */}
+                    
+                    {/* 🟢 NEW: Manual Invoice Number Field */}
+                    <FormField control={form.control} name="invoiceNo" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Invoice Number</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g. JMD/25-26/001" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+
                     <FormField control={form.control} name="clientId" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Client</FormLabel>

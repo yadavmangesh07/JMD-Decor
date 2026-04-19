@@ -70,10 +70,16 @@ export default function LoginPage() {
       await authService.login(values);
       toast.success("Welcome back!");
       // Navigation is now instant because the code was pre-fetched
-      navigate("/dashboard");
-    } catch (error) {
-      console.error(error);
-      toast.error("Invalid username or password");
+      navigate("/dashboard", { replace: true }); // Prevent users from navigating "back" to login
+    } catch (error: any) {
+      console.error("Login Error:", error);
+      // Safely extract backend error message or fallback to default
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        "Invalid username or password";
+        
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -87,7 +93,7 @@ export default function LoginPage() {
             <div className="h-16 w-full flex items-center justify-center mb-2">
               <img 
                 src="/logo.png" 
-                alt="Company Logo" 
+                alt="JMD Decor Logo" 
                 className="h-full w-auto object-contain"
                 onError={() => setLogoError(true)} 
               />
@@ -115,7 +121,14 @@ export default function LoginPage() {
                     <FormControl>
                       <div className="relative">
                         <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input className="pl-10" placeholder="admin_user" {...field} />
+                        <Input 
+                          className="pl-10" 
+                          placeholder="Enter Username" 
+                          autoComplete="username"
+                          autoFocus
+                          disabled={loading}
+                          {...field} 
+                        />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -136,12 +149,16 @@ export default function LoginPage() {
                           type={showPassword ? "text" : "password"}
                           className="pl-10 pr-10"
                           placeholder="••••••••" 
+                          autoComplete="current-password"
+                          disabled={loading}
                           {...field} 
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
+                          disabled={loading}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
@@ -155,7 +172,7 @@ export default function LoginPage() {
               <Button type="submit" className="w-full h-11 font-semibold" disabled={loading}>
                 {loading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                     Authenticating...
                   </>
                 ) : (

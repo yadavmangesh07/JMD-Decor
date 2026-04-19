@@ -17,9 +17,6 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
 
 import { estimateService } from "@/services/estimateService";
 import { clientService } from "@/services/clientService";
@@ -30,24 +27,18 @@ import type { Estimate } from "@/types";
 function EstimateRowSkeleton() {
   return (
     <TableRow className="pointer-events-none">
-      {/* Est No */}
       <TableCell>
         <div className="flex items-center gap-2">
           <Skeleton className="h-4 w-4 rounded" />
           <Skeleton className="h-3.5 w-24" />
         </div>
       </TableCell>
-      {/* Date */}
       <TableCell><Skeleton className="h-3.5 w-24" /></TableCell>
-      {/* Client */}
       <TableCell><Skeleton className="h-3.5 w-32" /></TableCell>
-      {/* Status */}
       <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-      {/* Total */}
       <TableCell className="text-right">
         <Skeleton className="h-3.5 w-20 ml-auto" />
       </TableCell>
-      {/* Actions */}
       <TableCell className="text-right">
         <Skeleton className="h-8 w-8 rounded-md ml-auto" />
       </TableCell>
@@ -67,9 +58,6 @@ export default function EstimateListPage() {
   const [filterClient, setFilterClient] = useState<string>("ALL");
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [sortOrder, setSortOrder] = useState<string>("desc");
-
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -117,14 +105,22 @@ export default function EstimateListPage() {
     } catch { toast.error("Failed to download PDF"); }
   };
 
+  /**
+   * ✅ MODIFIED: Opens PDF in a new tab instead of a modal
+   */
   const handlePreview = async (id: string) => {
     try {
-      toast.info("Loading Preview...");
+      toast.info("Generating preview...", { duration: 1000 });
       const blob = await estimateService.downloadPdf(id);
       const url = window.URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setPreviewOpen(true);
-    } catch { toast.error("Failed to load preview"); }
+      const newTab = window.open(url, "_blank");
+      
+      if (!newTab) {
+        toast.error("Popup blocked! Please allow popups to view the PDF.");
+      }
+    } catch {
+      toast.error("Failed to load preview");
+    }
   };
 
   const getClientName = (id: string) => {
@@ -173,18 +169,18 @@ export default function EstimateListPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-10">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Estimates</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Estimates</h1>
           <p className="text-muted-foreground">Manage quotations and project estimates.</p>
         </div>
-        <Button onClick={() => navigate("/estimates/new")}>
+        <Button onClick={() => navigate("/estimates/new")} className="font-bold tracking-tight">
           <Plus className="mr-2 h-4 w-4" /> Create Estimate
         </Button>
       </div>
 
-      {/* ── Filters ── */}
+      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-md border shadow-sm">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-600 mr-2">
           <Filter className="h-4 w-4" /> Filters:
@@ -226,16 +222,16 @@ export default function EstimateListPage() {
         )}
       </div>
 
-      {/* ── Table Card ── */}
-      <Card>
+      {/* Table Card */}
+      <Card className="shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle>Recent Estimates</CardTitle>
+            <CardTitle className="text-xl font-bold">Quotation List</CardTitle>
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search Client or Est No..."
-                className="pl-8"
+                className="pl-8 h-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -244,14 +240,14 @@ export default function EstimateListPage() {
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-slate-50/50">
               <TableRow>
-                <TableHead>Est No</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Est No</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Date</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Client</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Status</TableHead>
+                <TableHead className="text-right font-bold text-[11px] uppercase tracking-wider text-slate-400">Total</TableHead>
+                <TableHead className="text-right font-bold text-[11px] uppercase tracking-wider text-slate-400" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -267,41 +263,46 @@ export default function EstimateListPage() {
                 filtered.map((est) => (
                   <TableRow
                     key={est.id}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="cursor-pointer hover:bg-slate-50/80 transition-colors group"
                     onClick={() => handlePreview(est.id)}
                   >
                     <TableCell>
-                      <div className="flex items-center gap-2 font-bold">
-                        <FileText className="h-4 w-4 text-orange-500" />
+                      <div className="flex items-center gap-2 font-bold text-slate-900">
+                        <div className="p-1.5 bg-orange-50 rounded border border-orange-100 group-hover:scale-110 transition-transform">
+                          <FileText className="h-3.5 w-3.5 text-orange-500" />
+                        </div>
                         <span>{est.estimateNo || "N/A"}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{formatDateSafe(est.estimateDate)}</TableCell>
-                    <TableCell>{getClientName(est.clientId)}</TableCell>
+                    <TableCell className="text-slate-500 font-medium">{formatDateSafe(est.estimateDate)}</TableCell>
+                    <TableCell className="font-medium text-slate-700">{getClientName(est.clientId)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={cn("capitalize", getStatusColor(est.status || "DRAFT"))}>
+                      <Badge variant="outline" className={cn("text-[10px] h-5 px-2 capitalize border font-bold tracking-tight", getStatusColor(est.status || "DRAFT"))}>
                         {(est.status || "DRAFT").toLowerCase()}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-bold">
-                      ₹{(est.total || 0).toFixed(2)}
+                    <TableCell className="text-right font-black text-slate-900">
+                      ₹{(est.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
+                          <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100">
+                            <MoreHorizontal className="h-4 w-4 text-slate-400" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem onClick={() => handlePreview(est.id)}>
+                            <FileText className="mr-2 h-4 w-4" /> View Estimate
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => handleDownload(e, est.id, est.estimateNo)}>
                             <Download className="mr-2 h-4 w-4" /> Download PDF
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => navigate(`/estimates/${est.id}/edit`)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                            <Pencil className="mr-2 h-4 w-4" /> Edit Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(est.id)} className="text-red-600">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          <DropdownMenuItem onClick={() => handleDelete(est.id)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Estimate
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -313,20 +314,6 @@ export default function EstimateListPage() {
           </Table>
         </CardContent>
       </Card>
-
-      {/* ── Preview Dialog ── */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[90vw] w-full h-[90vh] flex flex-col p-0">
-          <DialogHeader className="p-4 pb-2 border-b bg-white rounded-t-lg">
-            <DialogTitle>Estimate Preview</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 w-full bg-gray-100 p-0 overflow-hidden">
-            {previewUrl && (
-              <iframe src={previewUrl} className="w-full h-full border-0" title="Estimate Preview" />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Search, Pencil, Trash2, MoreHorizontal, Download, AlertTriangle, Truck } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, MoreHorizontal, Download, AlertTriangle, Truck, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -23,20 +23,15 @@ import { challanService, type Challan } from "@/services/challanService";
 function ChallanRowSkeleton() {
   return (
     <TableRow className="pointer-events-none">
-      {/* Challan No */}
       <TableCell>
         <div className="flex items-center gap-2">
           <Skeleton className="h-4 w-4 rounded" />
           <Skeleton className="h-3.5 w-24" />
         </div>
       </TableCell>
-      {/* Date */}
       <TableCell><Skeleton className="h-3.5 w-24" /></TableCell>
-      {/* Client */}
       <TableCell><Skeleton className="h-3.5 w-36" /></TableCell>
-      {/* Order No */}
       <TableCell><Skeleton className="h-3.5 w-20" /></TableCell>
-      {/* Actions */}
       <TableCell className="text-right">
         <Skeleton className="h-8 w-8 rounded-md ml-auto" />
       </TableCell>
@@ -52,8 +47,6 @@ export default function ChallanListPage() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => { loadChallans(); }, []);
@@ -96,6 +89,7 @@ export default function ChallanListPage() {
   const handleDownload = async (e: React.MouseEvent, id: string, challanNo: string) => {
     e.stopPropagation();
     try {
+      toast.info("Downloading PDF...");
       const blob = await challanService.downloadPdf(id);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -109,12 +103,19 @@ export default function ChallanListPage() {
     }
   };
 
+  /**
+   * ✅ MODIFIED: Opens PDF in a new tab
+   */
   const handlePreview = async (id: string) => {
     try {
+      toast.info("Generating preview...", { duration: 1000 });
       const blob = await challanService.downloadPdf(id);
       const url = window.URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setPreviewOpen(true);
+      const newTab = window.open(url, "_blank");
+      
+      if (!newTab) {
+        toast.error("Popup blocked! Please allow popups to view the PDF.");
+      }
     } catch {
       toast.error("Failed to load preview");
     }
@@ -130,24 +131,26 @@ export default function ChallanListPage() {
       {/* ── Header ── */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Delivery Challans</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Delivery Challans</h1>
           <p className="text-muted-foreground">Manage your delivery notes and tracking.</p>
         </div>
         <Link to="/challans/new">
-          <Button><Plus className="mr-2 h-4 w-4" /> Create Challan</Button>
+          <Button className="font-bold tracking-tight">
+            <Plus className="mr-2 h-4 w-4" /> Create Challan
+          </Button>
         </Link>
       </div>
 
       {/* ── Table Card ── */}
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle>Recent Challans</CardTitle>
+            <CardTitle className="text-xl font-bold">Recent Challans</CardTitle>
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search Client or Challan No..."
-                className="pl-8"
+                className="pl-8 h-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -156,13 +159,13 @@ export default function ChallanListPage() {
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-slate-50/50">
               <TableRow>
-                <TableHead>Challan No</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Order No</TableHead>
-                <TableHead className="text-right w-[80px]">Actions</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Challan No</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Date</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Client</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Order No</TableHead>
+                <TableHead className="text-right font-bold text-[11px] uppercase tracking-wider text-slate-400 w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -178,41 +181,45 @@ export default function ChallanListPage() {
                 filteredChallans.map((challan) => (
                   <TableRow
                     key={challan.id}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="group cursor-pointer hover:bg-slate-50/80 transition-colors"
                     onClick={() => handlePreview(challan.id!)}
                   >
                     <TableCell className="font-medium whitespace-nowrap">
-                      <div className="flex font-bold items-center gap-2">
-                        <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex font-bold items-center gap-2 text-slate-900">
+                        <div className="p-1.5 bg-blue-50 rounded border border-blue-100 group-hover:scale-110 transition-transform">
+                          <Truck className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                        </div>
                         {challan.challanNo}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-slate-500 font-medium">
                       {challan.challanDate ? format(new Date(challan.challanDate), "dd MMM yyyy") : "-"}
                     </TableCell>
-                    <TableCell>{challan.clientName}</TableCell>
-                    <TableCell>{challan.orderNo}</TableCell>
+                    <TableCell className="font-medium text-slate-700">{challan.clientName}</TableCell>
+                    <TableCell className="font-medium text-slate-500">{challan.orderNo}</TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
+                          <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100">
+                            <MoreHorizontal className="h-4 w-4 text-slate-400" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem onClick={() => handlePreview(challan.id!)}>
+                            <FileText className="mr-2 h-4 w-4" /> View Challan
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => handleDownload(e, challan.id!, challan.challanNo)}>
-                            <Download className="mr-2 h-4 w-4 text-blue-600" /> Download PDF
+                            <Download className="mr-2 h-4 w-4" /> Download PDF
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={(e) => handleEdit(e, challan.id!)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                            <Pencil className="mr-2 h-4 w-4" /> Edit Details
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={(e) => initiateDelete(e, challan.id!)}
                             className="text-red-600 focus:text-red-600 focus:bg-red-50"
                           >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Challan
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -225,35 +232,21 @@ export default function ChallanListPage() {
         </CardContent>
       </Card>
 
-      {/* ── Preview Dialog ── */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[95vw] w-full h-[95vh] flex flex-col p-4">
-          <DialogHeader className="mb-2">
-            <DialogTitle>Challan Preview</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 bg-gray-100 rounded-md overflow-hidden border">
-            {previewUrl
-              ? <iframe src={previewUrl} className="w-full h-full" title="PDF Preview" />
-              : <div className="flex items-center justify-center h-full text-muted-foreground">Loading Preview...</div>
-            }
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* ── Delete Dialog ── */}
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" /> Confirm Deletion
-            </DialogTitle>
+        <DialogContent className="max-w-sm">
+          <DialogHeader className="items-center text-center">
+            <div className="p-3 bg-red-50 rounded-full mb-2">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <DialogTitle className="text-xl font-bold">Terminate Challan?</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this challan? This action cannot be undone.
+              Are you sure you want to delete this delivery note? This cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmDelete}>Delete Challan</Button>
+          <DialogFooter className="gap-2 sm:gap-0 mt-2">
+            <Button variant="outline" className="flex-1" onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button variant="destructive" className="flex-1 font-bold" onClick={confirmDelete}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

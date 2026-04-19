@@ -20,26 +20,22 @@ import { wccService } from "@/services/wccService";
 import { clientService } from "@/services/clientService";
 import type { WCCData } from "@/types/wccTypes";
 import { generateWCCPdf } from "@/services/wccPdfService";
+import { cn } from "@/lib/utils";
 
 // ─── Skeleton Row ──────────────────────────────────────────────────────────────
 
 function WCCRowSkeleton() {
   return (
     <TableRow className="pointer-events-none">
-      {/* Ref No */}
       <TableCell>
         <div className="flex items-center gap-2">
           <Skeleton className="h-4 w-4 rounded" />
           <Skeleton className="h-3.5 w-24" />
         </div>
       </TableCell>
-      {/* Date */}
       <TableCell><Skeleton className="h-3.5 w-24" /></TableCell>
-      {/* Store / Client */}
       <TableCell><Skeleton className="h-3.5 w-36" /></TableCell>
-      {/* PO No */}
       <TableCell><Skeleton className="h-3.5 w-20" /></TableCell>
-      {/* Actions */}
       <TableCell className="text-right">
         <Skeleton className="h-8 w-8 rounded-md ml-auto" />
       </TableCell>
@@ -56,8 +52,6 @@ export default function WCCListPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => { loadData(); }, []);
@@ -122,7 +116,7 @@ export default function WCCListPage() {
   const handleDownload = (e: React.MouseEvent, doc: WCCData) => {
     e.stopPropagation();
     try {
-      toast.info("Generating PDF...");
+      toast.info("Downloading PDF...");
       const freshDoc = getFreshWCC(doc);
       const blob = generateWCCPdf(freshDoc);
       const url = window.URL.createObjectURL(blob);
@@ -132,22 +126,28 @@ export default function WCCListPage() {
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
-      toast.success("Download started");
     } catch (error) {
       console.error(error);
       toast.error("Failed to download PDF");
     }
   };
 
+  /**
+   * ✅ MODIFIED: Opens WCC PDF in a new tab with 1s toast duration
+   */
   const handlePreview = (doc: WCCData) => {
     try {
-      toast.info("Loading Preview...");
+      toast.info("Generating preview...", { duration: 1000 });
       const freshDoc = getFreshWCC(doc);
       const blob = generateWCCPdf(freshDoc);
       const url = window.URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setPreviewOpen(true);
-    } catch {
+      
+      const newTab = window.open(url, "_blank");
+      if (!newTab) {
+        toast.error("Popup blocked! Please allow popups to view the PDF.");
+      }
+    } catch (error) {
+      console.error(error);
       toast.error("Failed to load preview");
     }
   };
@@ -165,24 +165,26 @@ export default function WCCListPage() {
       {/* ── Header ── */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Work Certificates</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Work Certificates</h1>
           <p className="text-muted-foreground">Manage work completion certificates (WCC).</p>
         </div>
         <Link to="/wcc/new">
-          <Button><Plus className="mr-2 h-4 w-4" /> Create Certificate</Button>
+          <Button className="font-bold tracking-tight">
+            <Plus className="mr-2 h-4 w-4" /> Create Certificate
+          </Button>
         </Link>
       </div>
 
-      {/* ── Table Card ── */}
-      <Card>
+      {/* ── Filters & Search ── */}
+      <Card className="shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle>Recent Certificates</CardTitle>
+            <CardTitle className="text-xl font-bold">Recent Certificates</CardTitle>
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search Client, Ref No, or PO..."
-                className="pl-8"
+                className="pl-8 h-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -191,13 +193,13 @@ export default function WCCListPage() {
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-slate-50/50">
               <TableRow>
-                <TableHead>Ref No</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Store / Client</TableHead>
-                <TableHead>PO No</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Ref No</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Date</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Store / Client</TableHead>
+                <TableHead className="font-bold text-[11px] uppercase tracking-wider text-slate-400">PO No</TableHead>
+                <TableHead className="text-right font-bold text-[11px] uppercase tracking-wider text-slate-400">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -213,44 +215,46 @@ export default function WCCListPage() {
                 filteredDocs.map((doc) => (
                   <TableRow
                     key={doc.id}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="group cursor-pointer hover:bg-slate-50/80 transition-colors"
                     onClick={() => handlePreview(doc)}
                   >
                     <TableCell className="font-medium align-middle">
-                      <div className="flex font-bold items-center gap-2">
-                        <FileCheck className="h-4 w-4 text-blue-600" />
+                      <div className="flex font-bold items-center gap-2 text-slate-900">
+                        <div className="p-1.5 bg-blue-50 rounded border border-blue-100 group-hover:scale-110 transition-transform">
+                          <FileCheck className="h-3.5 w-3.5 text-blue-600" />
+                        </div>
                         {doc.refNo}
                       </div>
                     </TableCell>
-                    <TableCell className="align-middle">
+                    <TableCell className="align-middle text-slate-500 font-medium">
                       {doc.certificateDate ? format(new Date(doc.certificateDate), "dd MMM yyyy") : "-"}
                     </TableCell>
-                    <TableCell className="font-medium text-gray-900 align-middle">{doc.storeName}</TableCell>
-                    <TableCell className="align-middle">{doc.poNo}</TableCell>
+                    <TableCell className="font-medium text-slate-700 align-middle">{doc.storeName}</TableCell>
+                    <TableCell className="align-middle text-slate-500 font-medium">{doc.poNo}</TableCell>
                     <TableCell className="text-right align-middle" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
+                          <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100">
                             <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4 text-slate-400" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem onClick={() => handlePreview(doc)}>
-                            <Eye className="mr-2 h-4 w-4" /> View Details
+                            <Eye className="mr-2 h-4 w-4" /> View Certificate
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={(e) => handleDownload(e, doc)}>
                             <Download className="mr-2 h-4 w-4 text-blue-600" /> Download PDF
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={(e) => doc.id && handleEdit(e, doc.id)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                            <Pencil className="mr-2 h-4 w-4" /> Edit Details
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={(e) => doc.id && initiateDelete(e, doc.id)}
                             className="text-red-600 focus:text-red-600 focus:bg-red-50"
                           >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Certificate
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -263,35 +267,21 @@ export default function WCCListPage() {
         </CardContent>
       </Card>
 
-      {/* ── Preview Dialog ── */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[95vw] w-full h-[95vh] flex flex-col p-4">
-          <DialogHeader className="mb-2">
-            <DialogTitle>Certificate Preview</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 bg-gray-100 rounded-md overflow-hidden border">
-            {previewUrl
-              ? <iframe src={previewUrl} className="w-full h-full" title="PDF Preview" />
-              : <div className="flex items-center justify-center h-full text-muted-foreground">Loading Preview...</div>
-            }
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* ── Delete Dialog ── */}
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" /> Confirm Deletion
-            </DialogTitle>
+        <DialogContent className="max-w-sm">
+          <DialogHeader className="items-center text-center">
+            <div className="p-3 bg-red-50 rounded-full mb-2">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <DialogTitle className="text-xl font-bold">Terminate Certificate?</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this certificate? This action cannot be undone.
+              Are you sure you want to delete this certificate record? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmDelete}>Delete Certificate</Button>
+          <DialogFooter className="gap-2 sm:gap-0 mt-2">
+            <Button variant="outline" className="flex-1" onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button variant="destructive" className="flex-1 font-bold" onClick={confirmDelete}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

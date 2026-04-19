@@ -61,24 +61,18 @@ import { InvoiceEmailDialog } from "@/features/invoices/InvoiceEmailDialog";
 function InvoiceRowSkeleton() {
   return (
     <TableRow className="pointer-events-none">
-      {/* Invoice # */}
       <TableCell>
         <div className="flex items-center gap-2">
           <Skeleton className="h-7 w-7 rounded" />
           <Skeleton className="h-3.5 w-24" />
         </div>
       </TableCell>
-      {/* Client */}
       <TableCell><Skeleton className="h-3.5 w-32" /></TableCell>
-      {/* Date */}
       <TableCell><Skeleton className="h-3.5 w-24" /></TableCell>
-      {/* Status */}
       <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
-      {/* Total */}
       <TableCell className="text-right">
         <Skeleton className="h-3.5 w-20 ml-auto" />
       </TableCell>
-      {/* Actions */}
       <TableCell className="text-right">
         <Skeleton className="h-8 w-8 rounded-md ml-auto" />
       </TableCell>
@@ -102,8 +96,6 @@ export default function InvoicePage() {
     open: false, invId: "", currentNo: "",
   });
 
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [emailDialogData, setEmailDialogData] = useState<{ id: string; no: string; email: string } | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -149,13 +141,26 @@ export default function InvoicePage() {
   const handleCreate = () => navigate("/invoices/new");
   const handleEdit = (inv: Invoice) => navigate(`/invoices/${inv.id}/edit`);
 
+  /**
+   * ✅ MODIFIED: Opens PDF in a new tab instead of a modal
+   */
   const handleViewPdf = async (invoice: Invoice) => {
     try {
-      toast.info("Loading Preview...");
+      toast.info("Generating preview...",{ duration: 1000 });
       const blob = await invoiceService.downloadPdf(invoice.id);
+      
+      // Create a blob URL
       const url = window.URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setPreviewOpen(true);
+      
+      // Open in new tab
+      const newTab = window.open(url, "_blank");
+      
+      
+      // Safety check for popup blockers
+      if (!newTab) {
+        
+        toast.error("Popup blocked! Please allow popups to view the PDF.");
+      }
     } catch {
       toast.error("Failed to load PDF preview");
     }
@@ -221,7 +226,7 @@ export default function InvoicePage() {
 
   return (
     <div className="space-y-6">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Invoices</h1>
@@ -232,7 +237,7 @@ export default function InvoicePage() {
         </Button>
       </div>
 
-      {/* ── Filters ── */}
+      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 bg-white p-3 rounded-md border shadow-sm">
         <div className="flex items-center gap-2 text-sm font-medium text-gray-600 mr-2">
           <Filter className="h-4 w-4" /> Filters:
@@ -274,7 +279,7 @@ export default function InvoicePage() {
         )}
       </div>
 
-      {/* ── Table ── */}
+      {/* Table */}
       <div className="border rounded-md bg-white shadow-sm overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-50/50">
@@ -290,7 +295,6 @@ export default function InvoicePage() {
 
           <TableBody>
             {loading ? (
-              // 8 skeleton rows while invoices load
               Array.from({ length: 8 }).map((_, i) => <InvoiceRowSkeleton key={i} />)
             ) : !data?.content || data.content.length === 0 ? (
               <TableRow>
@@ -381,7 +385,6 @@ export default function InvoicePage() {
         </Table>
       </div>
 
-      {/* ── Dialogs (unchanged) ── */}
       <EwayBillDialog
         open={ewayDialog.open}
         onOpenChange={(val) => setEwayDialog(prev => ({ ...prev, open: val }))}
@@ -389,21 +392,6 @@ export default function InvoicePage() {
         currentEwayNo={ewayDialog.currentNo}
         onSuccess={loadInvoices}
       />
-
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-[90vw] w-full h-[90vh] flex flex-col p-0 border-none">
-          <DialogHeader className="p-4 pb-2 border-b bg-white rounded-t-lg">
-            <DialogTitle className="text-lg font-black tracking-tight flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" /> Invoice Terminal
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 w-full bg-slate-100 p-0 overflow-hidden">
-            {previewUrl && (
-              <iframe src={previewUrl} className="w-full h-full border-0" title="Invoice Preview" />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {emailDialogData && (
         <InvoiceEmailDialog

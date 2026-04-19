@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, Save, ArrowLeft, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 
 import { challanService, type Challan } from "@/services/challanService";
 import { clientService } from "@/services/clientService";
+import { cn } from "@/lib/utils";
 
-// 👇 INDIAN STATES & CODES
 const INDIAN_STATES = [
     { name: "Jammu & Kashmir", code: "01" }, { name: "Himachal Pradesh", code: "02" }, { name: "Punjab", code: "03" },
     { name: "Chandigarh", code: "04" }, { name: "Uttarakhand", code: "05" }, { name: "Haryana", code: "06" },
@@ -39,7 +39,7 @@ export default function ChallanFormPage() {
 
   const form = useForm<Challan>({
     defaultValues: {
-      // 👇 FIXED: Set to empty so Backend generates it. Do not guess here!
+      // 🟢 MANUAL CHANGE: Now initialized for user input
       challanNo: "", 
       challanDate: format(new Date(), "yyyy-MM-dd"),
       orderNo: "",
@@ -59,7 +59,6 @@ export default function ChallanFormPage() {
     name: "items"
   });
 
-  // Load Initial Data
   useEffect(() => {
     const init = async () => {
         try {
@@ -70,7 +69,7 @@ export default function ChallanFormPage() {
 
         if (isEditMode) {
             try {
-                const challan = await challanService.getById(id!); // Added ! for strict null check
+                const challan = await challanService.getById(id!);
                 const formatted = {
                     ...challan,
                     challanDate: challan.challanDate ? format(new Date(challan.challanDate), "yyyy-MM-dd") : "",
@@ -124,9 +123,11 @@ export default function ChallanFormPage() {
           toast.success("Challan created successfully!");
       }
       navigate("/challans");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Operation failed");
+      // 🟢 MANUAL CHANGE: Display specific backend error message (e.g., duplicate number)
+      const msg = error.response?.data?.message || error.response?.data || "Operation failed";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -152,18 +153,17 @@ export default function ChallanFormPage() {
           <Card>
             <CardHeader><CardTitle>Challan Details</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
-               {/* 👇 FIXED: Input is disabled for new entries and shows placeholder */}
+               {/* 🟢 MANUAL CHANGE: Field is now enabled for manual entry */}
                <FormField control={form.control} name="challanNo" render={({ field }) => (
                  <FormItem>
                     <FormLabel>Challan No</FormLabel>
                     <FormControl>
                         <Input 
                             {...field} 
-                            placeholder={isEditMode ? "Challan No" : "(Auto-generated on save)"}
-                            disabled={!isEditMode} 
+                            placeholder="e.g. JMD/25-26/001"
+                            disabled={false} // 👈 Enabled
                         />
                     </FormControl>
-                    {!isEditMode && <p className="text-xs text-muted-foreground">Will be generated automatically</p>}
                     <FormMessage/>
                  </FormItem>
                )} />
@@ -288,8 +288,8 @@ export default function ChallanFormPage() {
 
           <div className="flex justify-end gap-4">
               <Button type="button" variant="outline" onClick={() => navigate("/challans")}>Cancel</Button>
-              <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Saving..." : <><Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update" : "Save"} & Generate</>}
+              <Button type="submit" disabled={isLoading} className="min-w-[150px]">
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <><Save className="mr-2 h-4 w-4" /> {isEditMode ? "Update" : "Save"} & Generate</>}
               </Button>
           </div>
 

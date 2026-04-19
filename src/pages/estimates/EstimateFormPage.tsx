@@ -31,7 +31,7 @@ export default function EstimateFormPage() {
 
   const { register, control, handleSubmit, setValue, watch, reset } = useForm<Estimate>({
     defaultValues: {
-      estimateNo: "",
+      estimateNo: "", // 🟢 Now used for manual input
       estimateDate: new Date().toISOString(),
       status: "DRAFT",
       items: [{ description: "", hsnCode: "", qty: 1, rate: 0, taxRate: 18, unit: "NOS" }],
@@ -130,9 +130,11 @@ export default function EstimateFormPage() {
         toast.success("Estimate created!");
       }
       navigate("/estimates");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error("Failed to save estimate");
+      // 🟢 Improved error feedback for manual number collisions
+      const msg = error.response?.data?.message || "Failed to save estimate";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -185,17 +187,16 @@ export default function EstimateFormPage() {
                   </Popover>
                 </div>
 
-                {/* 👇 MODIFIED: Estimate No is now READ-ONLY */}
+                {/* 🟢 MODIFIED: Estimate No is now EDITABLE */}
                 <div className="space-y-2">
                    <Label>Estimate No</Label>
                    <Input 
-                     {...register("estimateNo")} 
-                     placeholder="Auto-generated" 
-                     disabled={true} // 👈 Forces user not to type
-                     className="bg-muted text-muted-foreground cursor-not-allowed" // Visual cue
+                     {...register("estimateNo", { required: true })} 
+                     placeholder="e.g. JMD/25-26/001" 
+                     disabled={false} // 👈 Enabled for manual entry
                    />
                    <p className="text-xs text-muted-foreground">
-                     {isEditMode ? "Unique ID cannot be changed." : "System will generate this automatically."}
+                     Enter a unique estimate number.
                    </p>
                 </div>
 
