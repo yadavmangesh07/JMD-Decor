@@ -23,8 +23,9 @@ import { clientService } from "@/services/clientService";
 import type { Client } from "@/types";
 
 const invoiceSchema = z.object({
-  invoiceNo: z.string().min(1, "Invoice Number is required"), // 🟢 Added for manual entry
+  invoiceNo: z.string().min(1, "Invoice Number is required"),
   clientId: z.string().min(1, "Client is required"),
+  clientGst: z.string().optional().or(z.literal("")), // 🟢 Added for dynamic override
   status: z.string(),
   issuedAt: z.string(),
   dueDate: z.string().optional().or(z.literal("")),
@@ -58,8 +59,9 @@ export default function InvoiceFormPage() {
   const form = useForm({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
-      invoiceNo: "", // 🟢 Added
+      invoiceNo: "",
       clientId: "", 
+      clientGst: "", // 🟢 Added state default
       status: "DRAFT", 
       issuedAt: formatISO(new Date(), { representation: 'date' }),
       dueDate: "", billingAddress: "", shippingAddress: "",
@@ -83,8 +85,9 @@ export default function InvoiceFormPage() {
                 // @ts-ignore
                 const invoice = await invoiceService.getById(id!);
                 form.reset({
-                  invoiceNo: invoice.invoiceNo || "", // 🟢 Resetting manual field
+                  invoiceNo: invoice.invoiceNo || "",
                   clientId: invoice.clientId,
+                  clientGst: invoice.clientGst || "", // 🟢 Sync saved field tracking from DB snapshot
                   status: invoice.status,
                   issuedAt: invoice.issuedAt ? invoice.issuedAt.split('T')[0] : "",
                   dueDate: invoice.dueDate ? invoice.dueDate.split('T')[0] : "",
@@ -123,6 +126,7 @@ export default function InvoiceFormPage() {
     if (client) {
       form.setValue("billingAddress", client.address || "");
       form.setValue("shippingAddress", client.shippingAddress || client.address || ""); 
+      form.setValue("clientGst", client.gstin || ""); // 🟢 Fallback parsing directly to form model
     }
   };
 
@@ -175,7 +179,6 @@ export default function InvoiceFormPage() {
       navigate("/invoices");
     } catch (error: any) {
       console.error(error);
-      // 🟢 Catching specific backend error (e.g. duplicate invoice number)
       const errorMsg = error.response?.data?.message || "Failed to save invoice";
       toast.error(errorMsg);
     } finally {
@@ -206,9 +209,8 @@ export default function InvoiceFormPage() {
             
             <Card>
                 <CardHeader><CardTitle>Basic Details</CardTitle></CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-6"> {/* 🟢 Changed to grid-cols-4 */}
+                <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     
-                    {/* 🟢 NEW: Manual Invoice Number Field */}
                     <FormField control={form.control} name="invoiceNo" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Invoice Number</FormLabel>
@@ -251,12 +253,23 @@ export default function InvoiceFormPage() {
             <Card>
                 <CardHeader><CardTitle>Address & Transport</CardTitle></CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* 🟢 CHANGED: grid-cols-2 to grid-cols-3 to neatly space out Addresses + GSTIN field */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <FormField control={form.control} name="billingAddress" render={({ field }) => (
                             <FormItem><FormLabel>Billing Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
                         )} />
                         <FormField control={form.control} name="shippingAddress" render={({ field }) => (
                             <FormItem><FormLabel>Shipping Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                        )} />
+                        {/* 🟢 NEW: Input mapping enabling individual document adjustments */}
+                        <FormField control={form.control} name="clientGst" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Client GSTIN (Override)</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Client GST for this document" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
                         )} />
                     </div>
 

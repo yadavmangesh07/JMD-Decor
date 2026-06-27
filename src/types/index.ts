@@ -39,6 +39,7 @@ export interface Invoice {
   id: string;
   invoiceNo: string;
   clientId: string;
+  clientGst?: string;
   
   
   // 👇 NEW: Address Snapshot (Stored on Invoice)

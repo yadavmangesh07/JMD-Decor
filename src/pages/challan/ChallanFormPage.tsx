@@ -14,8 +14,6 @@ import { challanService, type Challan } from "@/services/challanService";
 import { clientService } from "@/services/clientService";
 import { INDIAN_STATES } from "@/constants/constants";
 
-
-
 export default function ChallanFormPage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -26,14 +24,13 @@ export default function ChallanFormPage() {
 
   const form = useForm<Challan>({
     defaultValues: {
-      // 🟢 MANUAL CHANGE: Now initialized for user input
       challanNo: "", 
       challanDate: format(new Date(), "yyyy-MM-dd"),
       orderNo: "",
       orderDate: format(new Date(), "yyyy-MM-dd"),
       clientName: "",
       clientAddress: "",
-      clientGst: "",
+      clientGst: "", // 🟢 Keeps tracking explicit snapshot variables
       clientState: "Maharashtra",
       clientStateCode: "27",
       contactPerson: "",
@@ -46,6 +43,7 @@ export default function ChallanFormPage() {
     name: "items"
   });
 
+  // Load Initial Data
   useEffect(() => {
     const init = async () => {
         try {
@@ -78,7 +76,7 @@ export default function ChallanFormPage() {
       if (client) {
           form.setValue("clientName", client.name);
           form.setValue("clientAddress", client.address);
-          form.setValue("clientGst", client.gstin);
+          form.setValue("clientGst", client.gstin || ""); // 🟢 Fallback auto-populating field on profile swap
           form.setValue("clientState", client.state || "Maharashtra");
           form.setValue("clientStateCode", client.stateCode || "27");
       }
@@ -112,7 +110,6 @@ export default function ChallanFormPage() {
       navigate("/challans");
     } catch (error: any) {
       console.error(error);
-      // 🟢 MANUAL CHANGE: Display specific backend error message (e.g., duplicate number)
       const msg = error.response?.data?.message || error.response?.data || "Operation failed";
       toast.error(msg);
     } finally {
@@ -140,7 +137,6 @@ export default function ChallanFormPage() {
           <Card>
             <CardHeader><CardTitle>Challan Details</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
-               {/* 🟢 MANUAL CHANGE: Field is now enabled for manual entry */}
                <FormField control={form.control} name="challanNo" render={({ field }) => (
                  <FormItem>
                     <FormLabel>Challan No</FormLabel>
@@ -148,7 +144,7 @@ export default function ChallanFormPage() {
                         <Input 
                             {...field} 
                             placeholder="e.g. JMD/25-26/001"
-                            disabled={false} // 👈 Enabled
+                            disabled={false}
                         />
                     </FormControl>
                     <FormMessage/>
@@ -219,8 +215,18 @@ export default function ChallanFormPage() {
                     </FormItem>
                   )} />
 
+                  {/* 🟢 MODIFIED: Input is fully interactive and tracking changes natively */}
                   <FormField control={form.control} name="clientGst" render={({ field }) => (
-                    <FormItem className="col-span-2"><FormLabel>GSTIN</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                    <FormItem className="col-span-2">
+                        <FormLabel>GSTIN</FormLabel>
+                        <FormControl>
+                            <Input 
+                                placeholder="Client GSTIN for this specific document" 
+                                {...field} 
+                            />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
                   )} />
                </div>
             </CardContent>

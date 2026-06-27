@@ -20,7 +20,6 @@ import { wccService } from "@/services/wccService";
 import { clientService } from "@/services/clientService";
 import type { WCCData } from "@/types/wccTypes";
 import { generateWCCPdf } from "@/services/wccPdfService";
-
 // ─── Skeleton Row ──────────────────────────────────────────────────────────────
 
 function WCCRowSkeleton() {
@@ -73,18 +72,24 @@ export default function WCCListPage() {
     }
   };
 
+  /**
+   * ✅ MODIFIED: Prioritize document snapshot properties over master data fallbacks
+   */
   const getFreshWCC = (wcc: WCCData): WCCData => {
     if (!wcc.clientId) return wcc;
     const client = clients.find(c => c.id === wcc.clientId);
     if (!client) return wcc;
+    
     let fullAddress = client.address || "";
     if (client.state) fullAddress += `, ${client.state}`;
     if (client.pincode) fullAddress += ` - ${client.pincode}`;
+    
     return {
       ...wcc,
       storeName: client.name,
       clientName: client.name,
-      gstin: client.gstin || wcc.gstin,
+      // 🟢 FIX: Look at the custom certificate override value first; fall back to profile only if empty
+      gstin: wcc.gstin || client.gstin || "", 
       projectLocation: fullAddress.trim() ? fullAddress : wcc.projectLocation,
     };
   };
@@ -131,9 +136,6 @@ export default function WCCListPage() {
     }
   };
 
-  /**
-   * ✅ MODIFIED: Opens WCC PDF in a new tab with 1s toast duration
-   */
   const handlePreview = (doc: WCCData) => {
     try {
       toast.info("Generating preview...", { duration: 1000 });
@@ -161,7 +163,7 @@ export default function WCCListPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-10">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Work Certificates</h1>
@@ -174,7 +176,7 @@ export default function WCCListPage() {
         </Link>
       </div>
 
-      {/* ── Filters & Search ── */}
+      {/* Tables and Lists */}
       <Card className="shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -266,7 +268,7 @@ export default function WCCListPage() {
         </CardContent>
       </Card>
 
-      {/* ── Delete Dialog ── */}
+      {/* Delete Confirmation Box */}
       <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader className="items-center text-center">

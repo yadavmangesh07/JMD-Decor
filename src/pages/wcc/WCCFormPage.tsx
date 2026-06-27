@@ -33,11 +33,12 @@ export default function WCCFormPage() {
 
   const { register, control, handleSubmit, reset, setValue, watch } = useForm<WCCData>({
     defaultValues: {
-      refNo: "", // 🟢 Initialized for manual input
+      refNo: "", 
       certificateDate: format(new Date(), "dd-MM-yyyy"),
       items: [{ srNo: 1, activity: "", qty: "" }],
       companyName: "JMD DECOR",
-      clientId: "" 
+      clientId: "",
+      gstin: "" // 🟢 Explicitly initialized in default values
     }
   });
 
@@ -50,6 +51,7 @@ export default function WCCFormPage() {
     const init = async () => {
         setLoading(true);
         try {
+            // 1. Fetch Clients first
             const clientData: any = await clientService.getAll();
             let loadedClients: any[] = [];
             
@@ -58,9 +60,11 @@ export default function WCCFormPage() {
             
             setClients(loadedClients);
 
+            // 2. Fetch WCC if Edit Mode
             if (isEditMode) {
                 const data = await wccService.getById(id!);
 
+                // --- DATE FORMATTING ---
                 if (data.certificateDate) {
                     try {
                         data.certificateDate = format(new Date(data.certificateDate), "dd-MM-yyyy");
@@ -72,13 +76,18 @@ export default function WCCFormPage() {
                     } catch (e) { console.error("Invalid PO Date", e); }
                 }
 
+                // --- FULL SYNC OF ALL CLIENT DETAILS ---
                 if (data.clientId) {
                     const latestClient = loadedClients.find((c: any) => c.id === data.clientId);
                     if (latestClient) {
+                        // Sync Names
                         data.storeName = latestClient.name;
                         data.clientName = latestClient.name;
-                        data.gstin = latestClient.gstin || "";
+                        
+                        // 🟢 FIX: Prioritize the saved snapshot from the document; fallback to master client only if empty
+                        data.gstin = data.gstin || latestClient.gstin || "";
 
+                        // Sync Full Address (Address + State + Pincode)
                         let fullAddress = latestClient.address || "";
                         if (latestClient.state) {
                             fullAddress += fullAddress ? `, ${latestClient.state}` : latestClient.state;
@@ -87,6 +96,7 @@ export default function WCCFormPage() {
                             fullAddress += fullAddress ? ` - ${latestClient.pincode}` : latestClient.pincode;
                         }
 
+                        // Overwrite project location if we found client details
                         if (fullAddress.trim()) {
                             data.projectLocation = fullAddress;
                         }
@@ -117,13 +127,13 @@ export default function WCCFormPage() {
           setValue("clientId", client.id);
           setValue("storeName", client.name);
           setValue("clientName", client.name);
+          setValue("gstin", client.gstin || ""); // 🟢 Auto-fills field when a profile is selected
           
           let fullAddress = client.address || "";
           if (client.state) fullAddress += `, ${client.state}`;
           if (client.pincode) fullAddress += ` - ${client.pincode}`;
           
           setValue("projectLocation", fullAddress);
-          setValue("gstin", client.gstin || "");
       }
   };
 
@@ -154,7 +164,6 @@ export default function WCCFormPage() {
       navigate("/wcc");
     } catch (error: any) {
       console.error(error);
-      // 🟢 Improved error feedback for manual Ref No collisions
       const msg = error.response?.data?.message || "Failed to save certificate";
       toast.error(msg);
     } finally {
@@ -205,13 +214,12 @@ export default function WCCFormPage() {
                 <Input placeholder="e.g. DUA LIMA RETAIL..." {...register("storeName", { required: true })} />
             </div>
 
-            {/* 🟢 MODIFIED: Ref No is now EDITABLE */}
             <div className="space-y-2">
                 <Label>Ref No.</Label>
                 <Input 
                     placeholder="e.g. JMD/WCC/2025-26/01" 
                     {...register("refNo", { required: true })} 
-                    disabled={false} // 👈 Enabled
+                    disabled={false} 
                 />
                 <p className="text-xs text-muted-foreground">
                     Enter a unique reference number.
@@ -257,6 +265,7 @@ export default function WCCFormPage() {
                 />
             </div>
 
+            {/* 🟢 MODIFIED: Interactive input component with validation tracking */}
             <div className="space-y-2">
                 <Label>GSTIN</Label>
                 <Input placeholder="24AAICD..." {...register("gstin")} />
@@ -307,7 +316,6 @@ export default function WCCFormPage() {
           </CardContent>
         </Card>
 
-        {/* ... (Work Items Card remains exactly the same as your code) */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Work Items</CardTitle>
