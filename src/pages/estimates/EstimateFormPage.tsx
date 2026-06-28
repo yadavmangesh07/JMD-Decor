@@ -31,7 +31,9 @@ export default function EstimateFormPage() {
 
   const { register, control, handleSubmit, setValue, watch, reset } = useForm<Estimate>({
     defaultValues: {
-      estimateNo: "", // 🟢 Now used for manual input
+      estimateNo: "", 
+      clientId: "",
+      clientGst: "", // 🟢 Added to capture the estimate-specific snapshot override
       estimateDate: new Date().toISOString(),
       status: "DRAFT",
       items: [{ description: "", hsnCode: "", qty: 1, rate: 0, taxRate: 18, unit: "NOS" }],
@@ -64,6 +66,7 @@ export default function EstimateFormPage() {
                 const est = await estimateService.getById(id!);
                 reset({
                     ...est,
+                    clientGst: est.clientGst || "", // 🟢 Sync saved data from database collection
                     items: est.items || [] 
                 });
             }
@@ -106,6 +109,7 @@ export default function EstimateFormPage() {
     if (client) {
       setValue("clientId", clientId);
       setValue("clientName", client.name);
+      setValue("clientGst", client.gstin || ""); // 🟢 Auto-populates standard snapshot string on swap
       
       let addr = client.address || "";
       if(client.state) addr += `, ${client.state}`;
@@ -132,7 +136,6 @@ export default function EstimateFormPage() {
       navigate("/estimates");
     } catch (error: any) {
       console.error(error);
-      // 🟢 Improved error feedback for manual number collisions
       const msg = error.response?.data?.message || "Failed to save estimate";
       toast.error(msg);
     } finally {
@@ -187,13 +190,12 @@ export default function EstimateFormPage() {
                   </Popover>
                 </div>
 
-                {/* 🟢 MODIFIED: Estimate No is now EDITABLE */}
                 <div className="space-y-2">
                    <Label>Estimate No</Label>
                    <Input 
                      {...register("estimateNo", { required: true })} 
                      placeholder="e.g. JMD/25-26/001" 
-                     disabled={false} // 👈 Enabled for manual entry
+                     disabled={false} 
                    />
                    <p className="text-xs text-muted-foreground">
                      Enter a unique estimate number.
@@ -218,9 +220,21 @@ export default function EstimateFormPage() {
                     <Input {...register("subject")} placeholder="e.g. Signage Work for Nykaa Luxe..." />
                 </div>
                 
-                <div className="col-span-2 space-y-2">
-                    <Label>Client Address</Label>
-                    <Textarea {...register("billingAddress")} rows={2} />
+                {/* 🟢 MODIFIED: Split address space dynamically into a clean grid for side-by-side editing */}
+                <div className="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2 space-y-2">
+                        <Label>Client Address</Label>
+                        <Textarea {...register("billingAddress")} rows={2} />
+                    </div>
+                    {/* 🟢 NEW: Registered custom input for GSTIN snapshot override */}
+                    <div className="space-y-2">
+                        <Label>Client GSTIN (Override)</Label>
+                        <Input 
+                            {...register("clientGst")} 
+                            placeholder="Client GSTIN for this record" 
+                            className="h-[58px]" // Matches Textarea scaling perfectly
+                        />
+                    </div>
                 </div>
             </CardContent>
         </Card>

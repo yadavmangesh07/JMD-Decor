@@ -134,6 +134,7 @@ export interface Estimate {
     estimateDate: string; // ISO Date
     clientId: string;
     clientName?: string; // For display
+    clientGst?:string;
     
     // Address Details (Snapshot)
     billingAddress: string;
