@@ -30,6 +30,10 @@ const SettingsPage = lazy(() => import("./pages/settings/SettingsPage"));
 const MyAccountPage = lazy(() => import("./pages/settings/MyAccountPage"));
 const PurchasesPage = lazy(() => import("./pages/purchases/PurchasePage"));
 
+// 🟢 NEW: Lazy-Loaded Credit Note Components
+const CreditNoteListPage = lazy(() => import("@/pages/creditNote/CreditNoteListPage"));
+const CreditNoteFormPage = lazy(() => import("@/pages/creditNote/CreditNoteFormPage"));
+
 /**
  * Custom Progress Bar Loader
  * Matches your Slate/Dark theme
@@ -106,6 +110,11 @@ function App() {
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/account" element={<MyAccountPage />} />
                   <Route path="/purchases" element={<PurchasesPage />} />
+
+                  {/* 🟢 NEW: Credit Note Architecture Configuration Matrix */}
+                  <Route path="/finance/credit-notes" element={<CreditNoteListPage />} />
+                  <Route path="/finance/credit-notes/new" element={<CreditNoteFormPage />} />
+                  <Route path="/finance/credit-notes/edit/:id" element={<CreditNoteFormPage />} />
                 </Route>
               </Route>
             </Route>

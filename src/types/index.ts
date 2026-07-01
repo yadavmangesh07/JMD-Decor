@@ -173,3 +173,53 @@ export interface PurchaseStats {
   totalPaid: number;
   totalUnpaid: number;
 }
+
+// Add to the bottom of src/types/index.ts
+
+export interface CreditNoteItem {
+  description: string;
+  hsn: string;
+  uom: string; // e.g., SQFT, NOS
+  qty: number;
+  rate: number;
+  amount?: number; // qty * rate
+}
+
+export interface CreditNote {
+  id?: string;
+  creditNoteNo: string;       // e.g., JMD/2025-26/02
+  creditNoteDate: string;     // ISO String
+
+  // References to Original Document
+  billReferenceNo: string;    // Ref Invoice No: JMD/2024-25/013
+  billReferenceDate: string;  // ISO String
+  poNumber?: string;          // P.O Number
+  poDate?: string;            // ISO String
+
+  // Logistics Snapshots
+  transportMode?: string;     // Road, Rail, etc.
+  ewayBillNo?: string;
+  scnNo?: string;
+
+  // Client Metadata Snapshots
+  clientId: string;
+  clientName: string;
+  billingAddress: string;     // BILLED TO
+  shippingAddress: string;    // SHIPPED TO
+  clientGst?: string;         // 🟢 Snapshot GSTIN (Editable Override)
+  clientState?: string;       // e.g., Maharashtra
+  clientStateCode?: string;   // e.g., 27
+
+  // Financial Breakdowns
+  items: CreditNoteItem[];
+  subtotal: number;
+  cgstRate: number;           // e.g., 9
+  cgstAmount: number;
+  sgstRate: number;           // e.g., 9
+  sgstAmount: number;
+  totalAmount: number;
+  rupeesInWords: string;      // Text translation of grand total
+
+  createdAt?: string;
+  updatedAt?: string;
+}

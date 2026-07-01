@@ -11,7 +11,8 @@ import {
   Truck, 
   FileCheck,
   Calculator,
-  ShoppingCart
+  ShoppingCart,
+  ReceiptIndianRupee // 🟢 NEW: Import icon for Credit Notes
 } from "lucide-react"; 
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/authService";
@@ -88,6 +89,7 @@ export function MainLayout() {
       items: [
         { href: "/invoices", label: "Invoices", icon: FileText },
         { href: "/purchases", label: "Purchases", icon: ShoppingCart },
+        { href: "/finance/credit-notes", label: "Credit Notes", icon: ReceiptIndianRupee }, // 🟢 NEW: Credit Notes navigation anchor
         { href: "/estimates", label: "Estimates", icon: Calculator },
       ]
     },
